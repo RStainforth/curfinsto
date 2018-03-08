@@ -32,6 +32,42 @@ import glob
 ################################################
 ################################################
 
+def get_value( value_divs ):
+
+	_value = "N/A"
+	for div in value_divs:
+		_value = "".join(((div.get_text()).split("$")[1]).split())
+		
+	return _value
+
+def get_volume( volume_divs ):
+
+	volume_value = "N/A"
+	for div in volume_divs:
+		volume_value = "".join(((div.get_text()).split(':')[1]).split()) 
+		
+	return volume_value
+	
+
+################################################
+################################################
+
+def get_stock_info( symbol ):
+
+	response = requests.get("https://web.tmxmoney.com/company.php?qm_symbol="+str(symbol))
+	data = response.text
+	soup = BeautifulSoup( response.text, "lxml" )
+	
+	# Get the volume value
+	my_divs = soup.findAll('div', {"class": "quote-volume volumeLarge"})
+	volume = get_volume( my_divs )
+	print ( "Volume is: " + str( volume ) )
+	
+	# Get the volume value
+	my_values = soup.findAll('div', {"class": "quote-price priceLarge"})
+	value = get_value( my_values )
+	print ( "Value is: " + str( value ) )
+
 if __name__ == '__main__':
 
 	# example: ./tmx_scrap "A" "A_symbols"
