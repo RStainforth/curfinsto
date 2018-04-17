@@ -48,13 +48,22 @@ def get_volume( volume_divs ):
 		
 	return volume_value
 	
+def get_dividend( dividend_divs ):
+
+	dividend_value = "N/A"
+	for div in dividend_divs:
+		dividend_value = "".join(((div.get_text()).split(':')[1]).split())
+		print ( div ) 
+		
+	return dividend_value
+	
 
 ################################################
 ################################################
 
 def get_stock_info( symbol ):
 
-	response = requests.get("https://web.tmxmoney.com/company.php?qm_symbol="+str(symbol))
+	response = requests.get("https://web.tmxmoney.com/quote.php?qm_symbol="+str(symbol))
 	data = response.text
 	soup = BeautifulSoup( response.text, "lxml" )
 	
@@ -67,6 +76,16 @@ def get_stock_info( symbol ):
 	my_values = soup.findAll('div', {"class": "quote-price priceLarge"})
 	value = get_value( my_values )
 	print ( "Value is: " + str( value ) )
+	
+	response = requests.get("https://web.tmxmoney.com/quote.php?qm_symbol="+str(symbol))
+	data = response.text
+	soup = BeautifulSoup( response.text, "lxml" )
+	#print( soup )
+	
+	# Get the dividend return
+	my_values = soup.findAll('div', {"class": "quote-tabs-content"})
+	value = get_dividend( my_values )
+	print ( "Dividend is: " + str( value ) )
 
 if __name__ == '__main__':
 
