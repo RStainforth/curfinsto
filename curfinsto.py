@@ -70,6 +70,7 @@ def get_stock_info( symbol ):
 	# Get the volume value
 	my_divs = soup.findAll('div', {"class": "quote-volume volumeLarge"})
 	volume = get_volume( my_divs )
+	volume = volume.replace(",","")
 	print ( "Volume is: " + str( volume ) )
 	
 	# Get the volume value
@@ -83,10 +84,29 @@ def get_stock_info( symbol ):
 	#print( soup )
 	
 	# Get the dividend return
-	my_values = soup.findAll('div', {"class": "quote-tabs-content"})
-	value = get_dividend( my_values )
-	print ( "Dividend is: " + str( value ) )
+	#my_values = soup.findAll('div', {"class": "quote-tabs-content"})
+	#value = get_dividend( my_values )
+	#print ( "Dividend is: " + str( value ) )
+	
+	rows = soup.find_all( "table", {"class": "detailed-quote-table"} )
+	for row in rows:
+		cols = row.find_all("tr")
+		for col in cols:
+			cells = col.find_all("td")
+			
+			# Get the field name of the table value (index 0)
+			str_index = cells[0].get_text()
+			
+			# The value of the field (index 1)
+			str_value = cells[1].get_text()
+			# strips whitespace from the string
+			str_value = "".join(str_value.split())
+			# Removes commas from numbers.
+			str_value = str_value.replace(",", "")
 
+			# Print the information.
+			print(str_index + " " + str_value)
+	
 if __name__ == '__main__':
 
 	# example: ./tmx_scrap "A" "A_symbols"
