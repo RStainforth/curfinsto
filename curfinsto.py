@@ -63,6 +63,8 @@ def get_dividend( dividend_divs ):
 
 def get_stock_info( symbol ):
 
+	stock_info = []
+
 	response = requests.get("https://web.tmxmoney.com/quote.php?qm_symbol="+str(symbol))
 	data = response.text
 	soup = BeautifulSoup( response.text, "lxml" )
@@ -71,22 +73,18 @@ def get_stock_info( symbol ):
 	my_divs = soup.findAll('div', {"class": "quote-volume volumeLarge"})
 	volume = get_volume( my_divs )
 	volume = volume.replace(",","")
-	print ( "Volume is: " + str( volume ) )
+	volume = "Volume: " + str( volume )
+	stock_info.append( volume )
 	
 	# Get the volume value
 	my_values = soup.findAll('div', {"class": "quote-price priceLarge"})
 	value = get_value( my_values )
-	print ( "Value is: " + str( value ) )
+	value = "Value: " + str( value )
+	stock_info.append( value )
 	
 	response = requests.get("https://web.tmxmoney.com/quote.php?qm_symbol="+str(symbol))
 	data = response.text
 	soup = BeautifulSoup( response.text, "lxml" )
-	#print( soup )
-	
-	# Get the dividend return
-	#my_values = soup.findAll('div', {"class": "quote-tabs-content"})
-	#value = get_dividend( my_values )
-	#print ( "Dividend is: " + str( value ) )
 	
 	rows = soup.find_all( "table", {"class": "detailed-quote-table"} )
 	for row in rows:
@@ -105,21 +103,23 @@ def get_stock_info( symbol ):
 			str_value = str_value.replace(",", "")
 
 			# Print the information.
-			print(str_index + " " + str_value)
+			cur_out = str_index + " " + str_value
+			stock_info.append( cur_out )
+			
+	return stock_info
 	
-if __name__ == '__main__':
+################################################
+################################################
 
-	# example: ./tmx_scrap "A" "A_symbols"
-
-	in_macro   = str(sys.argv[0])   # Input File
-	letter     = str(sys.argv[1])   # Letter to scrape
-	out_file   = str(sys.argv[2])   # Output file
+def list_stocks_by_letter( my_letter, out_file ):
 	
 	alphabet = []
 	names = []
 	symbols = []
-	for letter in range(65, 91): alphabet.append(chr(letter))
+	for letter in range(65, 91): 
+		alphabet.append(chr(letter))
 	for alpha in range( 0,len(alphabet) ):
+		if ( my_letter != alphabet[alpha] ): continue
 		response = requests.get("https://www.tsx.com/json/company-directory/search/tsx/"+str(alphabet[alpha])+"?")
 		print( "Visiting: " + "https://www.tsx.com/json/company-directory/search/tsx/"+str(alphabet[alpha])+"?" )
 		data = response.text
@@ -132,5 +132,10 @@ if __name__ == '__main__':
 	
 	with open( out_file, 'w' ) as out_f:
 		for i in range( 0, len( names ) ):
-			out_f.write( names[ i ] + "," + symbols[ i ] + "\n" )	
+			print( "Getting info for stock: " + str(symbols[ i ]) + ", " + str(i) + "/" + str(len(names)) ) 
+			cur_info = get_stock_info( str(symbols[ i ]) )
+			out_f.write( names[ i ] + " | " + symbols[ i ] + " | " )
+			for v in range( 0, len( cur_info ) ):
+				out_f.write( cur_info[ v ] + " | " )
+			out_f.write( "\n" );	
 	out_f.close()
