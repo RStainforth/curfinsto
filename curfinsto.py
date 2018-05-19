@@ -1,3 +1,5 @@
+# Copyright Rob Stainforth
+#
 #!/usr/bin/env python
 # TMX Scraper for stock symbols and their rate of return.
 # Inspired by following webpage:
@@ -27,6 +29,7 @@ import requests
 import string
 import datetime
 import glob
+import time
 #import shutil
 	
 ################################################
@@ -56,6 +59,30 @@ def get_dividend( dividend_divs ):
 		print ( div ) 
 		
 	return dividend_value
+	
+################################################
+################################################
+
+def get_variable_index( variable ):
+
+	if ( variable == "volume" ): return 0
+	if ( variable == "value" ): return 1
+	if ( variable == "open" ): return 2
+	if ( variable == "high" ): return 3
+	if ( variable == "sharesout" ): return 4
+	if ( variable == "beta" ): return 5
+	if ( variable == "prevclose" ): return 6
+	if ( variable == "low" ): return 7
+	if ( variable == "marketcap" ): return 8
+	if ( variable == "vwap" ): return 9
+	if ( variable == "dividend" ): return 10
+	if ( variable == "divfrequency" ): return 11
+	if ( variable == "peratio" ): return 12
+	if ( variable == "eps" ): return 13
+	if ( variable == "yield" ): return 14
+	if ( variable == "exdivdate" ): return 15
+	if ( variable == "pbratio" ): return 16
+	if ( variable == "exchange" ): return 17
 	
 
 ################################################
@@ -94,6 +121,7 @@ def get_stock_info( symbol ):
 			
 			# Get the field name of the table value (index 0)
 			str_index = cells[0].get_text()
+			str_index = "".join(str_index.split())
 			
 			# The value of the field (index 1)
 			str_value = cells[1].get_text()
@@ -106,12 +134,16 @@ def get_stock_info( symbol ):
 			cur_out = str_index + " " + str_value
 			stock_info.append( cur_out )
 			
+	for x in range( 0, len(stock_info) ):
+		tmp_str = stock_info[x].encode('ascii')
+		stock_info[x] = tmp_str
+			
 	return stock_info
 	
 ################################################
 ################################################
 
-def list_stocks_by_letter( my_letter, out_file ):
+def get_stocks_by_letter( my_letter, out_file ):
 	
 	alphabet = []
 	names = []
@@ -132,10 +164,12 @@ def list_stocks_by_letter( my_letter, out_file ):
 	
 	with open( out_file, 'w' ) as out_f:
 		for i in range( 0, len( names ) ):
-			print( "Getting info for stock: " + str(symbols[ i ]) + ", " + str(i) + "/" + str(len(names)) ) 
+			print( "Getting info for stock: " + str(symbols[ i ]) + ", " + str(i) + "/" + str(len(names)) )
+			time.sleep(2)
 			cur_info = get_stock_info( str(symbols[ i ]) )
 			out_f.write( names[ i ] + " | " + symbols[ i ] + " | " )
 			for v in range( 0, len( cur_info ) ):
 				out_f.write( cur_info[ v ] + " | " )
 			out_f.write( "\n" );	
 	out_f.close()
+	return symbols

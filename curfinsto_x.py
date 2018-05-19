@@ -14,7 +14,15 @@ if __name__ == '__main__':
 	stock_symbol = str(sys.argv[1])   # Stock Symbol to request
 	print( "Requested information for symbol: " + str(stock_symbol) )
 	stock = curfinsto
-	stock.get_stock_info( str(stock_symbol) )
+	symbol_list = stock.get_stocks_by_letter( "A", "A_stocks.txt" )
+	for sym in range (len(symbol_list)):
+		stock_info = stock.get_stock_info( symbol_list[ sym ] )
+		print( stock_info )
+		print( "-----------------------------" )
+	
+	#stock_info = stock.get_stock_info( str(stock_symbol) )
+	#for x in range (len(stock_info)):
+	#	print( stock_info[ x ] ) 
 	
 	
 # Information about stock variables available at tmx.com
