@@ -66,23 +66,45 @@ def get_dividend( dividend_divs ):
 def get_variable_index( variable ):
 
 	if ( variable == "volume" ): return 0
-	if ( variable == "value" ): return 1
-	if ( variable == "open" ): return 2
-	if ( variable == "high" ): return 3
-	if ( variable == "sharesout" ): return 4
-	if ( variable == "beta" ): return 5
-	if ( variable == "prevclose" ): return 6
-	if ( variable == "low" ): return 7
-	if ( variable == "marketcap" ): return 8
-	if ( variable == "vwap" ): return 9
-	if ( variable == "dividend" ): return 10
-	if ( variable == "divfrequency" ): return 11
-	if ( variable == "peratio" ): return 12
-	if ( variable == "eps" ): return 13
-	if ( variable == "yield" ): return 14
-	if ( variable == "exdivdate" ): return 15
-	if ( variable == "pbratio" ): return 16
-	if ( variable == "exchange" ): return 17
+	elif ( variable == "value" ): return 1
+	elif ( variable == "open" ): return 2
+	elif ( variable == "high" ): return 3
+	elif ( variable == "sharesout" ): return 4
+	elif ( variable == "beta" ): return 5
+	elif ( variable == "prevclose" ): return 6
+	elif ( variable == "low" ): return 7
+	elif ( variable == "marketcap" ): return 8
+	elif ( variable == "vwap" ): return 9
+	elif ( variable == "dividend" ): return 10
+	elif ( variable == "divfrequency" ): return 11
+	elif ( variable == "peratio" ): return 12
+	elif ( variable == "eps" ): return 13
+	elif ( variable == "yield" ): return 14
+	elif ( variable == "exdivdate" ): return 15
+	elif ( variable == "pbratio" ): return 16
+	elif ( variable == "exchange" ): return 17
+	else: 
+		print( "Error, unknown variable" )
+		print( "Options are: " )
+		print( "volume" )
+		print( "value" )
+		print( "open" )
+		print( "high" )
+		print( "sharesout" )
+		print( "beta" )
+		print( "prevclose" )
+		print( "low" )
+		print( "marketcap" )
+		print( "vwap" )
+		print( "dividend" )
+		print( "divfrequency" )
+		print( "peratio" )
+		print( "eps" )
+		print( "yield" )
+		print( "exdivdate" )
+		print( "pbratio" )
+		print( "exchange" )
+		return -1
 	
 
 ################################################
@@ -91,8 +113,16 @@ def get_variable_index( variable ):
 def get_stock_info( symbol ):
 
 	stock_info = []
-
-	response = requests.get("https://web.tmxmoney.com/quote.php?qm_symbol="+str(symbol))
+	
+	response = ''
+	while response == '':
+		try:
+			response = requests.get("https://web.tmxmoney.com/quote.php?qm_symbol="+str(symbol))
+			break
+		except:
+			print( "Error in connection, will sleep" )
+			time.sleep(5)
+		
 	data = response.text
 	soup = BeautifulSoup( response.text, "lxml" )
 	
@@ -109,7 +139,15 @@ def get_stock_info( symbol ):
 	value = "Value: " + str( value )
 	stock_info.append( value )
 	
-	response = requests.get("https://web.tmxmoney.com/quote.php?qm_symbol="+str(symbol))
+	response = ''
+	while response == '':
+		try:
+			response = requests.get("https://web.tmxmoney.com/quote.php?qm_symbol="+str(symbol))
+			break
+		except:
+			print( "Error in connection, will sleep" )
+			time.sleep(5)
+		
 	data = response.text
 	soup = BeautifulSoup( response.text, "lxml" )
 	
@@ -152,8 +190,17 @@ def get_stocks_by_letter( my_letter, out_file ):
 		alphabet.append(chr(letter))
 	for alpha in range( 0,len(alphabet) ):
 		if ( my_letter != alphabet[alpha] ): continue
-		response = requests.get("https://www.tsx.com/json/company-directory/search/tsx/"+str(alphabet[alpha])+"?")
-		print( "Visiting: " + "https://www.tsx.com/json/company-directory/search/tsx/"+str(alphabet[alpha])+"?" )
+		response = ''
+		while response == '':
+			try:
+				response = requests.get("https://www.tsx.com/json/company-directory/search/tsx/"+str(alphabet[alpha])+"?")
+				print( "Visiting: " + "https://www.tsx.com/json/company-directory/search/tsx/"+str(alphabet[alpha])+"?" )
+				break
+			except:
+				print( "Error in connection, will sleep" )
+				time.sleep(5)
+
+			
 		data = response.text
 		d = json.loads(str(data))
 		for sym in range( len(d['results']) ):
@@ -165,7 +212,6 @@ def get_stocks_by_letter( my_letter, out_file ):
 	with open( out_file, 'w' ) as out_f:
 		for i in range( 0, len( names ) ):
 			print( "Getting info for stock: " + str(symbols[ i ]) + ", " + str(i) + "/" + str(len(names)) )
-			time.sleep(2)
 			cur_info = get_stock_info( str(symbols[ i ]) )
 			out_f.write( names[ i ] + " | " + symbols[ i ] + " | " )
 			for v in range( 0, len( cur_info ) ):

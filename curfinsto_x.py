@@ -11,10 +11,10 @@ import sys
 
 if __name__ == '__main__':
 
-	stock_symbol = str(sys.argv[1])   # Stock Symbol to request
-	print( "Requested information for symbol: " + str(stock_symbol) )
+	stock_letter = str(sys.argv[1])   # Stock Symbol to request
+	print( "Requested information for symbol with letter: " + str(stock_letter) )
 	stock = curfinsto
-	symbol_list = stock.get_stocks_by_letter( "A", "A_stocks.txt" )
+	symbol_list = stock.get_stocks_by_letter( str(stock_letter), str(stock_letter)+"_stocks.txt" )
 	for sym in range (len(symbol_list)):
 		stock_info = stock.get_stock_info( symbol_list[ sym ] )
 		print( stock_info )
