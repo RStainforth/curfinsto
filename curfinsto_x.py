@@ -3,29 +3,75 @@
 # Date: April 28th, 2018
 # Brief: A short script that uses the 'curfinsto' module to 
 #        extract stock symbol information from online sources
-# Usage: ./curfinsto_x "AW.UN"
+# Usage: ./curfinsto_x "A" 
+# Would get all stocks beginning with letter A e.g. "AW.UN"
 
 import curfinsto
 import os
 import sys
+import pymongo
+from pymongo import MongoClient
+
+################################################
+# MongoDB connection
+################################################
+
+connection_params = {
+        'user': 'jwalker',
+        'password': 'R0bandJohn',
+        'host': 'ds235877.mlab.com',
+        'port': 35877,
+        'namespace': 'diywealth',
+}
+
+connection = MongoClient(
+    'mongodb://{user}:{password}@{host}:'
+    '{port}/{namespace}'.format(**connection_params)
+)
+
+db = connection.diywealth.mynewcollection
+
+#print( str(db.find_one()) )
+
+################################################
+################################################
 
 if __name__ == '__main__':
 
-	stock_letter = str(sys.argv[1])   # Stock Symbol to request
-	print( "Requested information for symbol with letter: " + str(stock_letter) )
-	stock = curfinsto
-	symbol_list = stock.get_stocks_by_letter( str(stock_letter), str(stock_letter)+"_stocks.txt" )
-	for sym in range (len(symbol_list)):
-		stock_info = stock.get_stock_info( symbol_list[ sym ] )
-		print( stock_info )
-		print( "-----------------------------" )
-	
-	#stock_info = stock.get_stock_info( str(stock_symbol) )
-	#for x in range (len(stock_info)):
-	#	print( stock_info[ x ] ) 
-	
-	
-# Information about stock variables available at tmx.com
+        stock_letter = str(sys.argv[1])   # Stock Symbol to request
+        print( "Requested information for symbol with letter: " + str(stock_letter) )
+        stock = curfinsto
+        get_by_letter_output = stock.get_stocks_by_letter( str(stock_letter), str(stock_letter)+"_stocks.txt" )
+        symbol_list = get_by_letter_output[0]
+        #for sym in range (len(symbol_list)):
+        #        stock_info = stock.get_stock_info( symbol_list[ sym ] )[0]
+        #        print( "Stock info for " + symbol_list[ sym ] )
+        #        print( stock_info )
+        #        print( "-----------------------------" )
+
+        documents = get_by_letter_output[1]
+
+        #print( documents )
+
+        print( "Inserting documents..." )
+        db.insert_many(documents)
+        print( "Documents inserted." )
+
+        
+        
+        #stock_info = stock.get_stock_info( str(stock_symbol) )[0]
+        #for x in range (len(stock_info)):
+        #        print( stock_info[ x ] ) 
+        
+
+
+# Database keys:
+
+# Name: The full name of the stock as found on tsx.com
+# Symbol: The stock symbol as found on tsx.com
+# ScrapeDate: Date the stock information was scraped
+        
+# Information about stock variables available at tmx.com:
 
 # Volume: In the context of a single stock trading on a stock exchange, the volume is commonly reported as the number of shares that changed hands during a given day.
 
