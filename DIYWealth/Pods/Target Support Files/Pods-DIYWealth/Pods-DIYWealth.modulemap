@@ -1,0 +1,6 @@
+framework module Pods_DIYWealth {
+  umbrella header "Pods-DIYWealth-umbrella.h"
+
+  export *
+  module * { export * }
+}
