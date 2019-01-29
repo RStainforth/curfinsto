@@ -18,6 +18,8 @@
 		3E0388D421FA84C200372EB3 /* StockTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0388D321FA84C200372EB3 /* StockTableViewCell.swift */; };
 		3E0388D621FA8BEB00372EB3 /* StockTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0388D521FA8BEB00372EB3 /* StockTableViewController.swift */; };
 		3EA1A14821FAC39B009EFC1E /* StockHeaderCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA1A14721FAC39B009EFC1E /* StockHeaderCell.swift */; };
+		3EA1A14C21FF1C72009EFC1E /* DateValueFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA1A14B21FF1C72009EFC1E /* DateValueFormatter.swift */; };
+		3EA1A14E21FFF62F009EFC1E /* HomeText.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3EA1A14D21FFF62F009EFC1E /* HomeText.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +35,8 @@
 		3E0388D321FA84C200372EB3 /* StockTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockTableViewCell.swift; sourceTree = "<group>"; };
 		3E0388D521FA8BEB00372EB3 /* StockTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockTableViewController.swift; sourceTree = "<group>"; };
 		3EA1A14721FAC39B009EFC1E /* StockHeaderCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockHeaderCell.swift; sourceTree = "<group>"; };
+		3EA1A14B21FF1C72009EFC1E /* DateValueFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateValueFormatter.swift; sourceTree = "<group>"; };
+		3EA1A14D21FFF62F009EFC1E /* HomeText.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = HomeText.txt; sourceTree = "<group>"; };
 		901BFEEA2C4083DCEF9B1E91 /* Pods-DIYWealth.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DIYWealth.release.xcconfig"; path = "Pods/Target Support Files/Pods-DIYWealth/Pods-DIYWealth.release.xcconfig"; sourceTree = "<group>"; };
 		B4BDFCBF290E3B62F98BC966 /* Pods_DIYWealth.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DIYWealth.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF1CCCE12CA843240EF53638 /* Pods-DIYWealth.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DIYWealth.debug.xcconfig"; path = "Pods/Target Support Files/Pods-DIYWealth/Pods-DIYWealth.debug.xcconfig"; sourceTree = "<group>"; };
@@ -73,8 +77,10 @@
 			children = (
 				3E03884C21E804A600372EB3 /* AppDelegate.swift */,
 				3E03884E21E804A600372EB3 /* HomeViewController.swift */,
+				3EA1A14D21FFF62F009EFC1E /* HomeText.txt */,
 				3E03885021E804A600372EB3 /* Main.storyboard */,
 				3E03888A21F559D300372EB3 /* PortfolioViewController.swift */,
+				3EA1A14B21FF1C72009EFC1E /* DateValueFormatter.swift */,
 				3E0388D121F939A200372EB3 /* Stock.swift */,
 				3E0388D321FA84C200372EB3 /* StockTableViewCell.swift */,
 				3E0388D521FA8BEB00372EB3 /* StockTableViewController.swift */,
@@ -163,6 +169,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EA1A14E21FFF62F009EFC1E /* HomeText.txt in Resources */,
 				3E03885721E804A700372EB3 /* LaunchScreen.storyboard in Resources */,
 				3E03885421E804A700372EB3 /* Assets.xcassets in Resources */,
 				3E03885221E804A600372EB3 /* Main.storyboard in Resources */,
@@ -225,6 +232,7 @@
 			files = (
 				3E0388D621FA8BEB00372EB3 /* StockTableViewController.swift in Sources */,
 				3E03888B21F559D300372EB3 /* PortfolioViewController.swift in Sources */,
+				3EA1A14C21FF1C72009EFC1E /* DateValueFormatter.swift in Sources */,
 				3E03884F21E804A600372EB3 /* HomeViewController.swift in Sources */,
 				3E0388D221F939A200372EB3 /* Stock.swift in Sources */,
 				3E0388D421FA84C200372EB3 /* StockTableViewCell.swift in Sources */,
