@@ -1,0 +1,444 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 51;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		25AC1204CDBEBFA471CBE435 /* Pods_DIYWealth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B4BDFCBF290E3B62F98BC966 /* Pods_DIYWealth.framework */; };
+		3E03884D21E804A600372EB3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E03884C21E804A600372EB3 /* AppDelegate.swift */; };
+		3E03884F21E804A600372EB3 /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E03884E21E804A600372EB3 /* HomeViewController.swift */; };
+		3E03885221E804A600372EB3 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E03885021E804A600372EB3 /* Main.storyboard */; };
+		3E03885421E804A700372EB3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E03885321E804A700372EB3 /* Assets.xcassets */; };
+		3E03885721E804A700372EB3 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E03885521E804A700372EB3 /* LaunchScreen.storyboard */; };
+		3E03888B21F559D300372EB3 /* PortfolioViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E03888A21F559D300372EB3 /* PortfolioViewController.swift */; };
+		3E0388D221F939A200372EB3 /* Stock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0388D121F939A200372EB3 /* Stock.swift */; };
+		3E0388D421FA84C200372EB3 /* StockTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0388D321FA84C200372EB3 /* StockTableViewCell.swift */; };
+		3E0388D621FA8BEB00372EB3 /* StockTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0388D521FA8BEB00372EB3 /* StockTableViewController.swift */; };
+		3EA1A14821FAC39B009EFC1E /* StockHeaderCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA1A14721FAC39B009EFC1E /* StockHeaderCell.swift */; };
+		3EA1A14C21FF1C72009EFC1E /* DateValueFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA1A14B21FF1C72009EFC1E /* DateValueFormatter.swift */; };
+		3EA1A14E21FFF62F009EFC1E /* HomeText.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3EA1A14D21FFF62F009EFC1E /* HomeText.txt */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3E03884921E804A600372EB3 /* DIYWealth.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DIYWealth.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3E03884C21E804A600372EB3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		3E03884E21E804A600372EB3 /* HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewController.swift; sourceTree = "<group>"; };
+		3E03885121E804A600372EB3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		3E03885321E804A700372EB3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3E03885621E804A700372EB3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		3E03885821E804A700372EB3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3E03888A21F559D300372EB3 /* PortfolioViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioViewController.swift; sourceTree = "<group>"; };
+		3E0388D121F939A200372EB3 /* Stock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stock.swift; sourceTree = "<group>"; };
+		3E0388D321FA84C200372EB3 /* StockTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockTableViewCell.swift; sourceTree = "<group>"; };
+		3E0388D521FA8BEB00372EB3 /* StockTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockTableViewController.swift; sourceTree = "<group>"; };
+		3EA1A14721FAC39B009EFC1E /* StockHeaderCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockHeaderCell.swift; sourceTree = "<group>"; };
+		3EA1A14B21FF1C72009EFC1E /* DateValueFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateValueFormatter.swift; sourceTree = "<group>"; };
+		3EA1A14D21FFF62F009EFC1E /* HomeText.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = HomeText.txt; sourceTree = "<group>"; };
+		901BFEEA2C4083DCEF9B1E91 /* Pods-DIYWealth.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DIYWealth.release.xcconfig"; path = "Pods/Target Support Files/Pods-DIYWealth/Pods-DIYWealth.release.xcconfig"; sourceTree = "<group>"; };
+		B4BDFCBF290E3B62F98BC966 /* Pods_DIYWealth.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DIYWealth.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DF1CCCE12CA843240EF53638 /* Pods-DIYWealth.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DIYWealth.debug.xcconfig"; path = "Pods/Target Support Files/Pods-DIYWealth/Pods-DIYWealth.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3E03884621E804A600372EB3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				25AC1204CDBEBFA471CBE435 /* Pods_DIYWealth.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3E03884021E804A600372EB3 = {
+			isa = PBXGroup;
+			children = (
+				3E03884B21E804A600372EB3 /* DIYWealth */,
+				3E03884A21E804A600372EB3 /* Products */,
+				6A5ED7CBEF1BDCFF53AACE2C /* Pods */,
+				C3DEB59336AE872BAFF7D5B9 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		3E03884A21E804A600372EB3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3E03884921E804A600372EB3 /* DIYWealth.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3E03884B21E804A600372EB3 /* DIYWealth */ = {
+			isa = PBXGroup;
+			children = (
+				3E03884C21E804A600372EB3 /* AppDelegate.swift */,
+				3E03884E21E804A600372EB3 /* HomeViewController.swift */,
+				3EA1A14D21FFF62F009EFC1E /* HomeText.txt */,
+				3E03885021E804A600372EB3 /* Main.storyboard */,
+				3E03888A21F559D300372EB3 /* PortfolioViewController.swift */,
+				3EA1A14B21FF1C72009EFC1E /* DateValueFormatter.swift */,
+				3E0388D121F939A200372EB3 /* Stock.swift */,
+				3E0388D321FA84C200372EB3 /* StockTableViewCell.swift */,
+				3E0388D521FA8BEB00372EB3 /* StockTableViewController.swift */,
+				3EA1A14721FAC39B009EFC1E /* StockHeaderCell.swift */,
+				3E03885321E804A700372EB3 /* Assets.xcassets */,
+				3E03885521E804A700372EB3 /* LaunchScreen.storyboard */,
+				3E03885821E804A700372EB3 /* Info.plist */,
+			);
+			path = DIYWealth;
+			sourceTree = "<group>";
+		};
+		6A5ED7CBEF1BDCFF53AACE2C /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				DF1CCCE12CA843240EF53638 /* Pods-DIYWealth.debug.xcconfig */,
+				901BFEEA2C4083DCEF9B1E91 /* Pods-DIYWealth.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+		C3DEB59336AE872BAFF7D5B9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B4BDFCBF290E3B62F98BC966 /* Pods_DIYWealth.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3E03884821E804A600372EB3 /* DIYWealth */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E03885B21E804A700372EB3 /* Build configuration list for PBXNativeTarget "DIYWealth" */;
+			buildPhases = (
+				85A2D2264D542A9C9912B702 /* [CP] Check Pods Manifest.lock */,
+				3E03884521E804A600372EB3 /* Sources */,
+				3E03884621E804A600372EB3 /* Frameworks */,
+				3E03884721E804A600372EB3 /* Resources */,
+				B683531CF2A87B3FFE7DEF89 /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DIYWealth;
+			productName = DIYWealth;
+			productReference = 3E03884921E804A600372EB3 /* DIYWealth.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3E03884121E804A600372EB3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1010;
+				LastUpgradeCheck = 1010;
+				ORGANIZATIONNAME = DIYWealth;
+				TargetAttributes = {
+					3E03884821E804A600372EB3 = {
+						CreatedOnToolsVersion = 10.1;
+					};
+				};
+			};
+			buildConfigurationList = 3E03884421E804A600372EB3 /* Build configuration list for PBXProject "DIYWealth" */;
+			compatibilityVersion = "Xcode 10.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3E03884021E804A600372EB3;
+			productRefGroup = 3E03884A21E804A600372EB3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3E03884821E804A600372EB3 /* DIYWealth */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3E03884721E804A600372EB3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3EA1A14E21FFF62F009EFC1E /* HomeText.txt in Resources */,
+				3E03885721E804A700372EB3 /* LaunchScreen.storyboard in Resources */,
+				3E03885421E804A700372EB3 /* Assets.xcassets in Resources */,
+				3E03885221E804A600372EB3 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		85A2D2264D542A9C9912B702 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-DIYWealth-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		B683531CF2A87B3FFE7DEF89 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${SRCROOT}/Pods/Target Support Files/Pods-DIYWealth/Pods-DIYWealth-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/Charts/Charts.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Charts.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-DIYWealth/Pods-DIYWealth-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3E03884521E804A600372EB3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3E0388D621FA8BEB00372EB3 /* StockTableViewController.swift in Sources */,
+				3E03888B21F559D300372EB3 /* PortfolioViewController.swift in Sources */,
+				3EA1A14C21FF1C72009EFC1E /* DateValueFormatter.swift in Sources */,
+				3E03884F21E804A600372EB3 /* HomeViewController.swift in Sources */,
+				3E0388D221F939A200372EB3 /* Stock.swift in Sources */,
+				3E0388D421FA84C200372EB3 /* StockTableViewCell.swift in Sources */,
+				3E03884D21E804A600372EB3 /* AppDelegate.swift in Sources */,
+				3EA1A14821FAC39B009EFC1E /* StockHeaderCell.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		3E03885021E804A600372EB3 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3E03885121E804A600372EB3 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		3E03885521E804A700372EB3 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3E03885621E804A700372EB3 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		3E03885921E804A700372EB3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		3E03885A21E804A700372EB3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3E03885C21E804A700372EB3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DF1CCCE12CA843240EF53638 /* Pods-DIYWealth.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = MD67RM5853;
+				INFOPLIST_FILE = DIYWealth/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = DIYWealth.DIYWealth;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 4.2;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3E03885D21E804A700372EB3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 901BFEEA2C4083DCEF9B1E91 /* Pods-DIYWealth.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = MD67RM5853;
+				INFOPLIST_FILE = DIYWealth/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = DIYWealth.DIYWealth;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 4.2;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3E03884421E804A600372EB3 /* Build configuration list for PBXProject "DIYWealth" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E03885921E804A700372EB3 /* Debug */,
+				3E03885A21E804A700372EB3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E03885B21E804A700372EB3 /* Build configuration list for PBXNativeTarget "DIYWealth" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E03885C21E804A700372EB3 /* Debug */,
+				3E03885D21E804A700372EB3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3E03884121E804A600372EB3 /* Project object */;
+}
