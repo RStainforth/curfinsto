@@ -56,6 +56,7 @@ class StockTableViewController: UITableViewController {
         cell.rankLabel.text = String(stock.rank) + "."
         cell.peLabel.text = "PE: " + String(stock.pe)
         cell.roeLabel.text = "ROE: " + String(stock.roe)
+        cell.marketcapLabel.text = "MCAP: " + String(stock.marketcap)
 
         return cell
     }
@@ -126,73 +127,73 @@ class StockTableViewController: UITableViewController {
     
     private func loadSampleStocks() {
         
-        guard let stock1 = Stock(symbol: "AAA", name: "Asrakjnsskd", rank: 1, pe: 1.0, roe: 33.2) else {
+        guard let stock1 = Stock(symbol: "AAA", name: "Asrakjnsskd", rank: 1, pe: 1.0, roe: 33.2, marketcap: 51.0) else {
             fatalError("Unable to instantiate stock1")
         }
-        guard let stock2 = Stock(symbol: "AAB", name: "Ajsjdrmnrnf", rank: 2, pe: 1.1, roe: 32.2) else {
+        guard let stock2 = Stock(symbol: "AAB", name: "Ajsjdrmnrnf", rank: 2, pe: 1.1, roe: 32.2, marketcap: 81.0) else {
             fatalError("Unable to instantiate stock2")
         }
-        guard let stock3 = Stock(symbol: "AAC", name: "Assnmdnfbjh", rank: 3, pe: 1.2, roe: 31.2) else {
+        guard let stock3 = Stock(symbol: "AAC", name: "Assnmdnfbjh", rank: 3, pe: 1.2, roe: 31.2, marketcap: 92.0) else {
             fatalError("Unable to instantiate stock3")
         }
-        guard let stock4 = Stock(symbol: "AAD", name: "Adfgrvnkaoo", rank: 4, pe: 1.3, roe: 30.2) else {
+        guard let stock4 = Stock(symbol: "AAD", name: "Adfgrvnkaoo", rank: 4, pe: 1.3, roe: 30.2, marketcap: 1000.0) else {
             fatalError("Unable to instantiate stock4")
         }
-        guard let stock5 = Stock(symbol: "AAE", name: "Asdjjdfjbeg", rank: 5, pe: 1.4, roe: 29.2) else {
+        guard let stock5 = Stock(symbol: "AAE", name: "Asdjjdfjbeg", rank: 5, pe: 1.4, roe: 29.2, marketcap: 1500.0) else {
             fatalError("Unable to instantiate stock5")
         }
-        guard let stock6 = Stock(symbol: "AAF", name: "Asjkjfhauwh", rank: 6, pe: 1.5, roe: 28.2) else {
+        guard let stock6 = Stock(symbol: "AAF", name: "Asjkjfhauwh", rank: 6, pe: 1.5, roe: 28.2, marketcap: 63.0) else {
             fatalError("Unable to instantiate stock6")
         }
-        guard let stock7 = Stock(symbol: "AAG", name: "Asdnsjekweb", rank: 7, pe: 1.6, roe: 27.2) else {
+        guard let stock7 = Stock(symbol: "AAG", name: "Asdnsjekweb", rank: 7, pe: 1.6, roe: 27.2, marketcap: 72.0) else {
             fatalError("Unable to instantiate stock7")
         }
-        guard let stock8 = Stock(symbol: "AAH", name: "Akdsjfhwehj", rank: 8, pe: 1.7, roe: 26.2) else {
+        guard let stock8 = Stock(symbol: "AAH", name: "Akdsjfhwehj", rank: 8, pe: 1.7, roe: 26.2, marketcap: 19995.0) else {
             fatalError("Unable to instantiate stock8")
         }
-        guard let stock9 = Stock(symbol: "AAI", name: "Asjkdjsfkej", rank: 9, pe: 1.8, roe: 26.2) else {
+        guard let stock9 = Stock(symbol: "AAI", name: "Asjkdjsfkej", rank: 9, pe: 1.8, roe: 26.2, marketcap: 82.0) else {
             fatalError("Unable to instantiate stock9")
         }
-        guard let stock10 = Stock(symbol: "AAJ", name: "Akslkdnsjdf", rank: 10, pe: 1.9, roe: 24.2) else {
+        guard let stock10 = Stock(symbol: "AAJ", name: "Akslkdnsjdf", rank: 10, pe: 1.9, roe: 24.2, marketcap: 20000.0) else {
             fatalError("Unable to instantiate stock10")
         }
-        guard let stock11 = Stock(symbol: "AAK", name: "Ajsdksjdksj", rank: 11, pe: 2.0, roe: 23.2) else {
+        guard let stock11 = Stock(symbol: "AAK", name: "Ajsdksjdksj", rank: 11, pe: 2.0, roe: 23.2, marketcap: 62.0) else {
             fatalError("Unable to instantiate stock11")
         }
-        guard let stock12 = Stock(symbol: "AAL", name: "Asnsddsdhdb", rank: 12, pe: 2.1, roe: 22.2) else {
+        guard let stock12 = Stock(symbol: "AAL", name: "Asnsddsdhdb", rank: 12, pe: 2.1, roe: 22.2, marketcap: 100000.0) else {
             fatalError("Unable to instantiate stock12")
         }
-        guard let stock13 = Stock(symbol: "AAM", name: "Aansmnssbns", rank: 13, pe: 2.2, roe: 21.2) else {
+        guard let stock13 = Stock(symbol: "AAM", name: "Aansmnssbns", rank: 13, pe: 2.2, roe: 21.2, marketcap: 153.0) else {
             fatalError("Unable to instantiate stock13")
         }
-        guard let stock14 = Stock(symbol: "AAN", name: "Aseopejrjdn", rank: 14, pe: 2.3, roe: 20.2) else {
+        guard let stock14 = Stock(symbol: "AAN", name: "Aseopejrjdn", rank: 14, pe: 2.3, roe: 20.2, marketcap: 2000.0) else {
             fatalError("Unable to instantiate stock14")
         }
-        guard let stock15 = Stock(symbol: "AAO", name: "Aqwjkfjkjbd", rank: 15, pe: 2.4, roe: 19.2) else {
+        guard let stock15 = Stock(symbol: "AAO", name: "Aqwjkfjkjbd", rank: 15, pe: 2.4, roe: 19.2, marketcap: 3000.0) else {
             fatalError("Unable to instantiate stock15")
         }
-        guard let stock16 = Stock(symbol: "AAP", name: "Asodpofjenr", rank: 16, pe: 2.5, roe: 18.2) else {
+        guard let stock16 = Stock(symbol: "AAP", name: "Asodpofjenr", rank: 16, pe: 2.5, roe: 18.2, marketcap: 35000.0) else {
             fatalError("Unable to instantiate stock16")
         }
-        guard let stock17 = Stock(symbol: "AAQ", name: "Asodifjoiej", rank: 17, pe: 2.6, roe: 17.2) else {
+        guard let stock17 = Stock(symbol: "AAQ", name: "Asodifjoiej", rank: 17, pe: 2.6, roe: 17.2, marketcap: 2700.0) else {
             fatalError("Unable to instantiate stock17")
         }
-        guard let stock18 = Stock(symbol: "AAR", name: "Asjdksjfnek", rank: 18, pe: 2.7, roe: 16.2) else {
+        guard let stock18 = Stock(symbol: "AAR", name: "Asjdksjfnek", rank: 18, pe: 2.7, roe: 16.2, marketcap: 197.0) else {
             fatalError("Unable to instantiate stock18")
         }
-        guard let stock19 = Stock(symbol: "AAS", name: "Asdksjfkjnw", rank: 19, pe: 2.8, roe: 15.2) else {
+        guard let stock19 = Stock(symbol: "AAS", name: "Asdksjfkjnw", rank: 19, pe: 2.8, roe: 15.2, marketcap: 93.0) else {
             fatalError("Unable to instantiate stock19")
         }
-        guard let stock20 = Stock(symbol: "AAT", name: "Asdkdjfkjen", rank: 20, pe: 2.9, roe: 14.2) else {
+        guard let stock20 = Stock(symbol: "AAT", name: "Asdkdjfkjen", rank: 20, pe: 2.9, roe: 14.2, marketcap: 25000.0) else {
             fatalError("Unable to instantiate stock20")
         }
-        guard let stock21 = Stock(symbol: "AAU", name: "Aajskcjdnie", rank: 21, pe: 3.0, roe: 13.2) else {
+        guard let stock21 = Stock(symbol: "AAU", name: "Aajskcjdnie", rank: 21, pe: 3.0, roe: 13.2, marketcap: 63.0) else {
             fatalError("Unable to instantiate stock21")
         }
-        guard let stock22 = Stock(symbol: "AAV", name: "Akdlkdflerj", rank: 22, pe: 3.1, roe: 12.2) else {
+        guard let stock22 = Stock(symbol: "AAV", name: "Akdlkdflerj", rank: 22, pe: 3.1, roe: 12.2, marketcap: 199000.0) else {
             fatalError("Unable to instantiate stock22")
         }
-        guard let stock23 = Stock(symbol: "AAW", name: "Apeoweirwhf", rank: 23, pe: 3.2, roe: 11.2) else {
+        guard let stock23 = Stock(symbol: "AAW", name: "Apeoweirwhf", rank: 23, pe: 3.2, roe: 11.2, marketcap: 72.0) else {
             fatalError("Unable to instantiate stock23")
         }
         
