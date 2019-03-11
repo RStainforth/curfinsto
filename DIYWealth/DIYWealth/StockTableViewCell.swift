@@ -11,11 +11,17 @@ import UIKit
 class StockTableViewCell: UITableViewCell {
     
     //MARK: Properties
+    //@IBOutlet weak var symbolLabel: UILabel!
+    //@IBOutlet weak var nameLabel: UILabel!
+    //@IBOutlet weak var rankLabel: UILabel!
+    //@IBOutlet weak var peLabel: UILabel!
+    //@IBOutlet weak var roeLabel: UILabel!
+    @IBOutlet weak var rankLabel: UILabel!
     @IBOutlet weak var symbolLabel: UILabel!
     @IBOutlet weak var nameLabel: UILabel!
-    @IBOutlet weak var rankLabel: UILabel!
     @IBOutlet weak var peLabel: UILabel!
     @IBOutlet weak var roeLabel: UILabel!
+    @IBOutlet weak var marketcapLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()

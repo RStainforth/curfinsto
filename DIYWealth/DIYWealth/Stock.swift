@@ -15,8 +15,9 @@ class Stock: NSObject {
     var rank: Int
     var pe: Double
     var roe: Double
+    var marketcap: Double
 
-    init?(symbol: String, name: String, rank: Int, pe: Double, roe: Double) {
+    init?(symbol: String, name: String, rank: Int, pe: Double, roe: Double, marketcap: Double) {
         
         // Initialisation should fail if the inputs are not correct.
         
@@ -26,7 +27,7 @@ class Stock: NSObject {
         }
         
         // The rating must be between 0 and 5 inclusively
-        guard (rank > 0) && (pe > 0.0) && (roe > 0.0) else {
+        guard (rank > 0) && (pe > 0.0) && (roe > 0.0) && (marketcap > 0.0) else {
             return nil
         }
         
@@ -36,6 +37,7 @@ class Stock: NSObject {
         self.rank = rank
         self.pe = pe
         self.roe = roe
+        self.marketcap = marketcap
         
     }
 
