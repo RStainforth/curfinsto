@@ -2,17 +2,25 @@ PODS:
   - Charts (3.2.1):
     - Charts/Core (= 3.2.1)
   - Charts/Core (3.2.1)
+  - mongo-embedded-c-driver (1.13.0-4.0.4)
+  - MongoSwift (0.0.8):
+    - mongo-embedded-c-driver (~> 1.13.0-4.0.0)
 
 DEPENDENCIES:
   - Charts
+  - MongoSwift
 
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
     - Charts
+    - mongo-embedded-c-driver
+    - MongoSwift
 
 SPEC CHECKSUMS:
   Charts: f122fb70b19847fa5817d018b77d6c5a2296ab25
+  mongo-embedded-c-driver: b46360baa15fc142baae80628822f26663220bde
+  MongoSwift: 57c2ae92978ec1d83a242b3599c99ba3d34779d9
 
-PODFILE CHECKSUM: 0a686b9330ea7ba6f4ab292e1ba1cd9f15abf76c
+PODFILE CHECKSUM: dab877e19ae5df17885e193f8927253e77095b18
 
 COCOAPODS: 1.5.3

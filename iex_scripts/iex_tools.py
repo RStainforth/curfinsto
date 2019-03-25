@@ -285,9 +285,10 @@ def mdb_get_chart(ref_symbol):
     return chart
    
 
-def mdb_get_dividends(ref_symbol):
+def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01"):
 
-    query = { "symbol": ref_symbol }
+    query = { "symbol": { "$in": ref_symbol },
+                "exDate": { "$gt": ref_date } }
     #print( query )
 
     db = get_mongodb()
@@ -357,4 +358,76 @@ def mdb_get_financials(ref_symbol):
 
     return financials
 
+def mdb_get_portfolios(date):
 
+    db = get_mongodb()
+
+    query = { "inceptionDate": { "$lte": date } }
+
+    results = db.pf_info.find( query ).sort("portfolioID", ASCENDING)
+
+    portfolios = pandas.DataFrame()
+    for doc in results:
+        portfolios = portfolios.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+
+    portfolios.drop("_id", axis=1, inplace=True)
+    #symbols = symbols[symbols.isEnabled != False]
+    #symbols.reset_index(drop=True, inplace=True)
+    #print( symbols )
+
+    return portfolios
+
+def mdb_get_transactions(portfolioID, date):
+
+    db = get_mongodb()
+
+    query = { "portfolioID": portfolioID,
+                "date": date }
+
+    results = db.pf_transactions.find( query )
+
+    transactions = pandas.DataFrame()
+    for doc in results:
+        transactions = transactions.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+
+    if not transactions.empty:
+        transactions.drop("_id", axis=1, inplace=True)
+    #symbols = symbols[symbols.isEnabled != False]
+    #symbols.reset_index(drop=True, inplace=True)
+    #print( symbols )
+
+    return transactions
+
+def mdb_get_holdings(portfolioID, date):
+
+    db = get_mongodb()
+
+    results = db.pf_holdings.aggregate([
+        { "$match": { "portfolioID": portfolioID } },
+        { "$sort": { "lastUpdated": DESCENDING } },
+        { "$group": {
+            "_id": "$symbol",
+            "symbols": { "$push": "$$ROOT" }
+            }
+        },
+        { "$replaceRoot": {
+            "newRoot": { "$arrayElemAt": ["$symbols", 0] }
+            }
+        },
+        { "$sort": { "symbol": ASCENDING } }
+    ])
+    #results = results.sort("symbol", ASCENDING)
+
+    holdings = pandas.DataFrame()
+    for doc in results:
+        #print( doc )
+        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
+        holdings = holdings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        #print( holdings )
+        #index = index+1
+
+    if not holdings.empty:
+        holdings.drop("_id", axis=1, inplace=True)
+    #print( holdings )
+
+    return holdings
