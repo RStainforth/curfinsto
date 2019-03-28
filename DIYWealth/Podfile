@@ -7,5 +7,6 @@ target 'DIYWealth' do
 
   # Pods for DIYWealth
   pod 'Charts'
+  pod 'MongoSwift'
 
 end

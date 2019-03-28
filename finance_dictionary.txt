@@ -1,0 +1,6 @@
+Finance Dictionary:
+
+The Enterprise Value, or EV for short, is a measure of a company's total value, often used as a more comprehensive alternative to equity market capitalization. Enterprise value is calculated as the market capitalization plus debt, minority interest and preferred shares, minus total cash and cash equivalents.
+
+EV = market value of common stock + market value of preferred equity + market value of debt + minority interest - cash and investments.
+

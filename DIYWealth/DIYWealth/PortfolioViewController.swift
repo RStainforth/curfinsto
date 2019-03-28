@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import MongoSwift
 import Charts // You need this line to be able to use Charts Library
 
 class PortfolioViewController: UIViewController {
@@ -26,6 +27,13 @@ class PortfolioViewController: UIViewController {
     }
     
     func plotGraph() {
+        MongoSwift.initialize()
+        let client = try? MongoClient(connectionString: "mongodb://diywealth:R0bandJohn@ds235877.mlab.com:35877/diywealth")
+        
+        let db = try? client!.db("diywealth")
+        let collection = try? db!.createCollection("iex_dividends")
+        
+        print(collection)
     
         var portfolioLineChartEntry  = [ChartDataEntry]() //this is the Array that will eventually be displayed on the graph.
         var indexLineChartEntry  = [ChartDataEntry]() //this is the Array that will eventually be displayed on the graph.
