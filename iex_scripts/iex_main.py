@@ -23,11 +23,12 @@ if __name__ == '__main__':
     insert_symbols = False
     insert_prices = False
     insert_dividends = False
-    insert_earnings = True
-    insert_financials = True
+    insert_earnings = False
+    insert_financials = False
     insert_portfolio = False
     insert_holdings = False
-    update_holdings = True
+    update_holdings = False
+    insert_performance = True
 
     db = iex_tools.get_mongodb()
 
@@ -65,7 +66,7 @@ if __name__ == '__main__':
         for index, mdb_symbol in mdb_symbols.iterrows():
             #print(mdb_symbol)
             iex_chart = iex_tools.iex_get_chart( mdb_symbol["symbol"], ref_range='2y' )
-            mdb_chart = iex_tools.mdb_get_chart( mdb_symbol["symbol"] )
+            mdb_chart = iex_tools.mdb_get_chart( [mdb_symbol["symbol"]] )
             #print( iex_chart )
             #print( mdb_chart )
             #Remove existing dates
@@ -139,10 +140,10 @@ if __name__ == '__main__':
 
     #If new financials exist then upload them
     if insert_financials:
-        mdb_symbols = iex_tools.mdb_get_symbols()
+        mdb_symbols = iex_tools.mdb_get_symbols()[5000:]
         #print(mdb_symbols)
         for index, mdb_symbol in mdb_symbols.iterrows():
-            print( "Getting data for " + mdb_symbol["symbol"] )
+            #print( "Getting data for " + mdb_symbol["symbol"] )
             iex_financials = iex_tools.iex_get_financials( mdb_symbol["symbol"] )
             mdb_financials = iex_tools.mdb_get_financials( mdb_symbol["symbol"] )
             #print( iex_financials )
@@ -544,14 +545,94 @@ if __name__ == '__main__':
             #Find all dividends after date for array of stocks
             #Sort them in date order
 
-
-
-
-
-
-
+    if insert_performance:
         #Calculate portfolio value - close of day prices for holdings
         #Calculate portfolio return - (close of day holdings - (close of previous day holding + purchases))/(close of previous day holding + purchases)
+        #Get array of dates for a stock e.g. SPX
+        spy_dates = iex_tools.mdb_get_chart(["SPY"],"2018-06-25")["date"].sort_values(ascending=True, axis="index").tolist()
+        #print( spy_dates )
+        portfolios = iex_tools.mdb_get_portfolios("2018-07-02")["portfolioID"].tolist()
+        #print( portfolios )
+        for portfolio in portfolios:
+            #if portfolio not in ["stocks30mcap100M"]:
+            #    continue
+            holdings = iex_tools.mdb_get_holdings(portfolio,"2018-07-02")
+            transactions = iex_tools.mdb_get_transactions(portfolio,"2018-07-02")
+            #print( transactions )
+            symbols = holdings["symbol"].unique().tolist()
+            prices = iex_tools.mdb_get_chart(symbols,"2018-06-25")
+            perf_tables = []
+            #Loop through dates
+            for idate in range(1,len(spy_dates)):
+                #if idate > 10:
+                #    continue
+                #print( spy_dates[idate] )
+                #Find table of holdings on that date and previous day
+                #print( holdings[holdings.lastUpdated <= spy_dates[idate-1]] )
+                #Value the holdings using close of day prices + cash
+                prevCloseValue = 0
+                closeValue = 0
+                adjPrevCloseValue = 0
+                adjCloseValue = 0
+                prev_day_holding = holdings[holdings.lastUpdated <= spy_dates[idate-1]]
+                curr_day_holding = holdings[holdings.lastUpdated <= spy_dates[idate]]
+                prev_day_holding = pandas.merge(prev_day_holding,prices[prices.date == spy_dates[idate-1]],how='left',left_on=["symbol"],right_on=["symbol"],sort=False)
+                curr_day_holding = pandas.merge(curr_day_holding,prices[prices.date == spy_dates[idate]],how='left',left_on=["symbol"],right_on=["symbol"],sort=False)
+                #print( curr_day_holding )
+                #Check that all stocks have a price else continue
+                #print( prev_day_holding )
+                #print( curr_day_holding )
+                if prev_day_holding[prev_day_holding.symbol != "USD"].isnull().values.any():
+                    continue
+                if curr_day_holding[curr_day_holding.symbol != "USD"].isnull().values.any():
+                    continue
+                #print( prev_day_holding )
+                #print( curr_day_holding )
+                if not prev_day_holding.empty:
+                    for index, holding in prev_day_holding.iterrows():
+                        if holding.symbol == "USD":
+                            prevCloseValue = prevCloseValue + (holding.endOfDayQuantity)
+                        else:
+                            prevCloseValue = prevCloseValue + (holding.endOfDayQuantity * holding.close)
+                if not curr_day_holding.empty:
+                    for index, holding in curr_day_holding.iterrows():
+                        if holding.symbol == "USD":
+                            closeValue = closeValue + (holding.endOfDayQuantity)
+                        else:
+                            closeValue = closeValue + (holding.endOfDayQuantity * holding.close)
+                deposits = transactions[(transactions.date == spy_dates[idate]) & (transactions.type == "deposit")]
+                withdrawals = transactions[(transactions.date == spy_dates[idate]) & (transactions.type == "withdrawal")]
+                #print( deposits )
+                #print( withdrawals )
+                adjPrevCloseValue = prevCloseValue
+                adjCloseValue = closeValue
+                if not deposits.empty:
+                    for index, deposit in deposits.iterrows():
+                        adjPrevCloseValue = adjPrevCloseValue + (deposit.volume * deposit.price)
+                if not withdrawals.empty:
+                    for index, withdrawal in withdrawals.iterrows():
+                        adCloseValue = adjCloseValue + (withdrawal.volume * withdrawal.price)
+                #Value the holdings using close of previous day prices + cash (zero if no holdings)
+                #Find if any deposits were made that day
+                #print( prevCloseValue )
+                #print( closeValue )
+                #build portfolio performance table
+                #portfolioID, date, endOfDayValue, percentChange
+                if adjPrevCloseValue == 0:
+                    continue
+                perf_table = { "portfolioID": portfolio,
+                                "date": spy_dates[idate],
+                                "prevCloseValue": prevCloseValue,
+                                "closeValue": closeValue,
+                                "adjPrevCloseValue": adjPrevCloseValue,
+                                "adjCloseValue": adjCloseValue,
+                                "percentReturn": 100.*((adjCloseValue-adjPrevCloseValue)/adjPrevCloseValue) }
+                #print( perf_table )
+                perf_tables.append( perf_table )
+            #print( perf_tables )
+            insert_pf_performance = True
+            if insert_pf_performance:
+                db.pf_performance.insert_many( perf_tables )
 
     #stock_letter = str(sys.argv[1])   # Stock Symbol to request
     #print( "Requested information for symbol with letter: " + str(stock_letter) )

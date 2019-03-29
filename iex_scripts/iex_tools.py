@@ -260,9 +260,10 @@ def mdb_get_symbols():
 
     return symbols
 
-def mdb_get_chart(ref_symbol):
+def mdb_get_chart(ref_symbol, ref_date = "1990-01-01"):
 
-    query = { "symbol": ref_symbol }
+    query = { "symbol": { "$in": ref_symbol },
+                "date": { "$gt": ref_date } }
     #print( query )
 
     db = get_mongodb()
@@ -403,7 +404,8 @@ def mdb_get_holdings(portfolioID, date):
     db = get_mongodb()
 
     results = db.pf_holdings.aggregate([
-        { "$match": { "portfolioID": portfolioID } },
+        { "$match": { "portfolioID": portfolioID,
+                        "lastUpdated": { "$lte": date } } },
         { "$sort": { "lastUpdated": DESCENDING } },
         { "$group": {
             "_id": "$symbol",
@@ -431,3 +433,28 @@ def mdb_get_holdings(portfolioID, date):
     #print( holdings )
 
     return holdings
+
+def mdb_get_performance(ref_portfolioID, ref_date = "1990-01-01"):
+
+    query = { "portfolioID": { "$in": ref_portfolioID },
+                "date": { "$gte": ref_date } }
+    #print( query )
+
+    db = get_mongodb()
+
+    results = db.pf_performance.find( query ).sort("date", ASCENDING)
+   
+    performance = pandas.DataFrame()
+    for doc in results:
+        #print( doc )
+        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
+        performance = performance.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        #print( symbols )
+        #index = index+1
+
+    performance.drop("_id", axis=1, errors='ignore', inplace=True)
+    #symbols = symbols[symbols.isEnabled != False]
+    performance.reset_index(drop=True, inplace=True)
+    #print( performance )
+
+    return performance
