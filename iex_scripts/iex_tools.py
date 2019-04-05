@@ -59,6 +59,21 @@ def iex_get_symbols(ref_symbol=None, ref_type=None):
     
     return symbols
 
+def iex_get_company(ref_symbol):
+
+    stock = Stock( ref_symbol )
+    company = stock.company_table()
+    #print( company )
+    #remove unnecesary data
+    company.drop(["exchange","website","CEO","issueType"], axis=1, errors='ignore', inplace=True)
+    #add symbol name
+    #print( company )
+    if not company.empty:
+        company = set_column_sequence(company, ["symbol","companyName","industry","description","sector"])
+        #print( company )
+
+    return company
+
 def iex_get_chart(ref_symbol, ref_range='1m'):
 
     stock = Stock( ref_symbol )
@@ -249,7 +264,7 @@ def mdb_get_symbols():
     for doc in results:
         #print( doc )
         #print( pandas.DataFrame.from_dict(doc, orient='index').T )
-        symbols = symbols.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        symbols = symbols.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
         #print( symbols )
         #index = index+1
 
@@ -260,21 +275,74 @@ def mdb_get_symbols():
 
     return symbols
 
-def mdb_get_chart(ref_symbol, ref_date = "1990-01-01"):
-
-    query = { "symbol": { "$in": ref_symbol },
-                "date": { "$gt": ref_date } }
-    #print( query )
+def mdb_get_company(symbol):
 
     db = get_mongodb()
 
-    results = db.iex_charts.find( query ).sort("date", DESCENDING)
-   
+    query = { "symbol": { "$in": symbol } }
+
+    results = db.iex_company.find( query ).sort("symbol", ASCENDING)
+
+    company = pandas.DataFrame()
+    for doc in results:
+        #print( doc )
+        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
+        company = company.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
+        #print( symbols )
+        #index = index+1
+
+    company.drop("_id", axis=1, errors='ignore', inplace=True)
+    #symbols = symbols[symbols.isEnabled != False]
+    company.reset_index(drop=True, inplace=True)
+    #print( chart )
+
+    return company
+
+#when = "after"
+#when = "latest"
+def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
+
+    db = get_mongodb()
+
+    query = []
+
+    gte_date = (pandas.Timestamp(ref_date) + pandas.DateOffset(days=-100)).strftime('%Y-%m-%d')
+
+    if when == "after":
+        query = { "symbol": { "$in": ref_symbol },
+                    "date": { "$gte": ref_date } }
+    else:
+        query = [
+                    { "$match": { "symbol": { "$in": ref_symbol },
+                                    "date": { "$lte": ref_date },
+                                    "date": { "$gte": gte_date } } },
+                    { "$sort": { "date": DESCENDING } },
+                    { "$group": {
+                        "_id": "$symbol",
+                        "symbols": { "$push": "$$ROOT" }
+                        }
+                    },
+                    { "$replaceRoot": {
+                        "newRoot": { "$arrayElemAt": ["$symbols", 0] }
+                        }
+                    },
+                    { "$sort": { "symbol": ASCENDING } }
+                ]
+
+    #print( query )
+
+    results = []
+
+    if when == "after":
+        results = db.iex_charts.find( query ).sort("date", DESCENDING)
+    else:
+        results = db.iex_charts.aggregate( query )
+
     chart = pandas.DataFrame()
     for doc in results:
         #print( doc )
         #print( pandas.DataFrame.from_dict(doc, orient='index').T )
-        chart = chart.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        chart = chart.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
         #print( symbols )
         #index = index+1
 
@@ -285,22 +353,47 @@ def mdb_get_chart(ref_symbol, ref_date = "1990-01-01"):
 
     return chart
    
-
-def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01"):
-
-    query = { "symbol": { "$in": ref_symbol },
-                "exDate": { "$gt": ref_date } }
-    #print( query )
+#when = after
+#when = latest
+def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01", when = "after"):
 
     db = get_mongodb()
 
-    results = db.iex_dividends.find( query ).sort("exDate", DESCENDING)
-   
+    query = []
+
+    if when == "after":
+        query = { "symbol": { "$in": ref_symbol },
+                    "exDate": { "$gte": ref_date } }
+    else:
+        query = [
+                    { "$match": { "symbol": { "$in": ref_symbol },
+                                    "exDate": { "$lte": ref_date } } },
+                    { "$sort": { "exDate": DESCENDING } },
+                    { "$group": {
+                        "_id": "$symbol",
+                        "symbols": { "$push": "$$ROOT" }
+                        }
+                    },
+                    { "$replaceRoot": {
+                        "newRoot": { "$arrayElemAt": ["$symbols", 0] }
+                        }
+                    },
+                    { "$sort": { "symbol": ASCENDING } }
+                ]
+        #print( query )
+
+    results = []
+
+    if when == "after":
+        results = db.iex_dividends.find( query ).sort("exDate", DESCENDING)
+    else:
+        results = db.iex_dividends.aggregate( query )
+
     dividends = pandas.DataFrame()
     for doc in results:
         #print( doc )
         #print( pandas.DataFrame.from_dict(doc, orient='index').T )
-        dividends = dividends.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        dividends = dividends.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
         #print( symbols )
         #index = index+1
 
@@ -310,21 +403,48 @@ def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01"):
     #print( dividends )
 
     return dividends
-   
-def mdb_get_earnings(ref_symbol):
 
-    query = { "symbol": ref_symbol }
-    #print( query )
+#when = after
+#when = latest
+def mdb_get_earnings(ref_symbol, ref_date = "1900-01-01", when = "after"):
 
     db = get_mongodb()
 
-    results = db.iex_earnings.find( query ).sort("fiscalEndDate", DESCENDING)
- 
+    query = []
+
+    if when == "after":
+        query = { "symbol": { "$in": ref_symbol },
+                    "fiscalEndDate": { "$gte": ref_date } }
+    else:
+        query = [
+                    { "$match": { "symbol": { "$in": ref_symbol },
+                                    "fiscalEndDate": { "$lte": ref_date } } },
+                    { "$sort": { "fiscalEndDate": DESCENDING } },
+                    { "$group": {
+                        "_id": "$symbol",
+                        "symbols": { "$push": "$$ROOT" }
+                        }
+                    },
+                    { "$replaceRoot": {
+                        "newRoot": { "$arrayElemAt": ["$symbols", 0] }
+                        }
+                    },
+                    { "$sort": { "symbol": ASCENDING } }
+                ]
+    #print( query )
+
+    results = []
+
+    if when == "after":
+        results = db.iex_earnings.find( query ).sort("fiscalEndDate", DESCENDING)
+    else:
+        results = db.iex_earnings.aggregate( query )
+
     earnings = pandas.DataFrame()
     for doc in results:
         #print( doc )
         #print( pandas.DataFrame.from_dict(doc, orient='index').T )
-        earnings = earnings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        earnings = earnings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
         #print( symbols )
         #index = index+1
 
@@ -335,20 +455,47 @@ def mdb_get_earnings(ref_symbol):
 
     return earnings
 
-def mdb_get_financials(ref_symbol):
-
-    query = { "symbol": ref_symbol }
-    #print( query )
+#when = after
+#when = latest
+def mdb_get_financials(ref_symbol, ref_date = "1900-01-01", when = "after"):
 
     db = get_mongodb()
 
-    results = db.iex_financials.find( query ).sort("reportDate", DESCENDING)
- 
+    query = []
+
+    if when == "after":
+        query = { "symbol": { "$in": ref_symbol },
+                    "reportDate": { "$gte": ref_date } }
+    else:
+        query = [
+                    { "$match": { "symbol": { "$in": ref_symbol },
+                                    "reportDate": { "$lte": ref_date } } },
+                    { "$sort": { "reportDate": DESCENDING } },
+                    { "$group": {
+                        "_id": "$symbol",
+                        "symbols": { "$push": "$$ROOT" }
+                        }
+                    },
+                    { "$replaceRoot": {
+                        "newRoot": { "$arrayElemAt": ["$symbols", 0] }
+                        }
+                    },
+                    { "$sort": { "symbol": ASCENDING } }
+                ]
+    #print( query )
+
+    results = []
+
+    if when == "after":
+        results = db.iex_financials.find( query ).sort("reportDate", DESCENDING)
+    else:
+        results = db.iex_financials.aggregate( query )
+
     financials = pandas.DataFrame()
     for doc in results:
         #print( doc )
         #print( pandas.DataFrame.from_dict(doc, orient='index').T )
-        financials = financials.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        financials = financials.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
         #print( symbols )
         #index = index+1
 
@@ -369,7 +516,7 @@ def mdb_get_portfolios(date):
 
     portfolios = pandas.DataFrame()
     for doc in results:
-        portfolios = portfolios.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        portfolios = portfolios.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
 
     portfolios.drop("_id", axis=1, inplace=True)
     #symbols = symbols[symbols.isEnabled != False]
@@ -378,18 +525,24 @@ def mdb_get_portfolios(date):
 
     return portfolios
 
-def mdb_get_transactions(portfolioID, date):
+def mdb_get_transactions(portfolioID, date, when = "on"):
 
     db = get_mongodb()
 
-    query = { "portfolioID": portfolioID,
-                "date": date }
+    query = {}
+
+    if when == "on":
+        query = { "portfolioID": portfolioID,
+                    "date": date }
+    else:
+        query = { "portfolioID": portfolioID,
+                    "date": { "$gte": date } }
 
     results = db.pf_transactions.find( query )
 
     transactions = pandas.DataFrame()
     for doc in results:
-        transactions = transactions.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        transactions = transactions.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
 
     if not transactions.empty:
         transactions.drop("_id", axis=1, inplace=True)
@@ -399,32 +552,47 @@ def mdb_get_transactions(portfolioID, date):
 
     return transactions
 
-def mdb_get_holdings(portfolioID, date):
+#when = "on" holdings on that date
+#when = "after" holdings on or after that date
+def mdb_get_holdings(portfolioID, date = " 1990-01-01", when = "on"):
 
     db = get_mongodb()
 
-    results = db.pf_holdings.aggregate([
-        { "$match": { "portfolioID": portfolioID,
-                        "lastUpdated": { "$lte": date } } },
-        { "$sort": { "lastUpdated": DESCENDING } },
-        { "$group": {
-            "_id": "$symbol",
-            "symbols": { "$push": "$$ROOT" }
-            }
-        },
-        { "$replaceRoot": {
-            "newRoot": { "$arrayElemAt": ["$symbols", 0] }
-            }
-        },
-        { "$sort": { "symbol": ASCENDING } }
-    ])
+    query = []
+
+    if when == "on":
+        query = [
+                    { "$match": { "portfolioID": portfolioID,
+                                    "lastUpdated": { "$lte": date } } },
+                    { "$sort": { "lastUpdated": DESCENDING } },
+                    { "$group": {
+                        "_id": "$symbol",
+                        "symbols": { "$push": "$$ROOT" }
+                        }
+                    },
+                    { "$replaceRoot": {
+                        "newRoot": { "$arrayElemAt": ["$symbols", 0] }
+                        }
+                    },
+                    { "$sort": { "symbol": ASCENDING } }
+                ]
+    else:
+        query = { "portfolioID": portfolioID,
+                    "lastUpdated": { "$gte": date } }
+
+    results = []
+
+    if when == "on":
+        results = db.pf_holdings.aggregate( query )
+    else:
+        results = db.pf_holdings.find( query ).sort("date", ASCENDING)
     #results = results.sort("symbol", ASCENDING)
 
     holdings = pandas.DataFrame()
     for doc in results:
         #print( doc )
         #print( pandas.DataFrame.from_dict(doc, orient='index').T )
-        holdings = holdings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        holdings = holdings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
         #print( holdings )
         #index = index+1
 
@@ -442,13 +610,13 @@ def mdb_get_performance(ref_portfolioID, ref_date = "1990-01-01"):
 
     db = get_mongodb()
 
-    results = db.pf_performance.find( query ).sort("date", ASCENDING)
+    results = db.pf_performance.find( query ).sort("date", DESCENDING)
    
     performance = pandas.DataFrame()
     for doc in results:
         #print( doc )
         #print( pandas.DataFrame.from_dict(doc, orient='index').T )
-        performance = performance.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+        performance = performance.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
         #print( symbols )
         #index = index+1
 

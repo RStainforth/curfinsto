@@ -117,6 +117,11 @@ class Stock:
     def company(self):
         return self._get("company")
 
+    def company_table(self):
+        company = self.company()
+        if "tags" in company: del company["tags"]
+        return pd.DataFrame.from_dict([company])
+
     def delayed_quote(self):
         return self._get("delayed-quote")
 

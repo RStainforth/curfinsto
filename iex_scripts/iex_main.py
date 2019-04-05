@@ -13,6 +13,8 @@ import pandas
 import pymongo
 #from pymongo import MongoClient
 from pymongo import ASCENDING, DESCENDING
+from pymongo.errors import BulkWriteError
+import datetime
 
 ################################################
 ################################################
@@ -21,6 +23,8 @@ if __name__ == '__main__':
 
     #Flags for inserting specific data types
     insert_symbols = False
+    insert_company = True
+    delete_prices = False
     insert_prices = False
     insert_dividends = False
     insert_earnings = False
@@ -28,7 +32,7 @@ if __name__ == '__main__':
     insert_portfolio = False
     insert_holdings = False
     update_holdings = False
-    insert_performance = True
+    insert_performance = False
 
     db = iex_tools.get_mongodb()
 
@@ -39,9 +43,10 @@ if __name__ == '__main__':
         symbols.reset_index(drop=True, inplace=True)
         symbols_spy.reset_index(drop=True, inplace=True)
         #print( symbols )
-        symbols = symbols.append(symbols_spy, ignore_index=True)
+        symbols = symbols.append(symbols_spy, ignore_index=True, sort=False)
         symbols.reset_index(drop=True, inplace=True)
         symbols_len = len(symbols.index)
+        mdb_symbols = iex_tools.mdb_get_symbols()
         #print( symbols )
         #If different to existing list the upload new list
         for index, symbol in symbols.iterrows():
@@ -52,21 +57,83 @@ if __name__ == '__main__':
             #print( symbol )
             #db.iex_symbols.insert_one( symbol.to_dict() )
             #is different to mongodb?
-            if iex_tools.mdb_new_symbol( symbol ):
+            mask = (mdb_symbols['iexId'] == symbol['iexId']) & (mdb_symbols['isEnabled'] == symbol['isEnabled']) & (mdb_symbols['name'] == symbol['name']) & (mdb_symbols['type'] == symbol['type']) 
+            if mdb_symbols.loc[mask].empty:
+            #if iex_tools.mdb_new_symbol( symbol ):
                 #insert symbol document
                 print( str(index) + "/" + str(symbols_len) + " Inserting new symbol: " + symbol["symbol"] )
                 db.iex_symbols.insert_one( symbol.to_dict() )
             else:
                 print( str(index) + "/" + str(symbols_len) + " Symbol " + symbol["symbol"] + " already exists" )
 
+    #If new company exists then upload them
+    if insert_company:
+        mdb_symbols = iex_tools.mdb_get_symbols()
+        mdb_companies = iex_tools.mdb_get_company( mdb_symbols['symbol'].tolist() )
+        #print(mdb_symbols)
+        for index, mdb_symbol in mdb_symbols.iterrows():
+            #if index > 10:
+            #    break
+            iex_company = iex_tools.iex_get_company( mdb_symbol["symbol"] )
+            iex_company.sort_index(inplace=True)
+            mdb_company = pandas.DataFrame()
+            if not mdb_companies.empty:
+                mdb_company = mdb_companies[ mdb_companies['symbol'] == mdb_symbol['symbol'] ]
+                mdb_company.sort_index(inplace=True)
+            #mdb_company = iex_tools.mdb_get_company( [mdb_symbol["symbol"]] )
+            #print( iex_company )
+            #print( mdb_company )
+            #Remove existing dates
+            #print( iex_company["exDate"] )
+            #print( mdb_company["exDate"] )
+            #print( ~iex_company["exDate"].isin(mdb_company["exDate"]) )
+            #Remove any existing dates
+            if not mdb_company.empty and not iex_company.empty:
+                #mask = iex_company['exDate'] > mdb_company['exDate'].iloc[0]
+                #iex_company = iex_company.loc[mask]
+                iex_company = iex_company[ ~iex_company['symbol'].isin(mdb_company['symbol']) ]
+            #print( iex_company )
+
+            if not iex_company.empty:
+                print( str(index) + "/" + str(len(mdb_symbols.index)) + " Inserting company for " + mdb_symbol["symbol"] )
+                #print( iex_company )
+                #print( iex_company.to_dict('records') )
+                db.iex_company.insert_many( iex_company.to_dict('records') )
+            else:
+                print( str(index) + "/" + str(len(mdb_symbols.index)) + " No new data for " + mdb_symbol["symbol"] )
+
+    if delete_prices:
+        query = { "date": { "$lt": "2018-01-01" } }
+        db.iex_charts.delete_many( query )
+
     #If new prices exist then upload them
     if insert_prices:
         mdb_symbols = iex_tools.mdb_get_symbols()
+        currDate = datetime.datetime.now().strftime("%Y-%m-%d")
+        #get all latest price for each symbol up to 100 days ago
+        mdb_charts = iex_tools.mdb_get_chart( mdb_symbols["symbol"].tolist(), currDate, "latest" )
         #print(mdb_symbols)
+        #loop through symbols
         for index, mdb_symbol in mdb_symbols.iterrows():
+            #if index > 200:
+            #    break
             #print(mdb_symbol)
-            iex_chart = iex_tools.iex_get_chart( mdb_symbol["symbol"], ref_range='2y' )
-            mdb_chart = iex_tools.mdb_get_chart( [mdb_symbol["symbol"]] )
+            #Get 1y of charts
+            iex_chart = iex_tools.iex_get_chart( mdb_symbol["symbol"], ref_range='1y' )
+            #print( iex_chart )
+            iex_chart.sort_index(inplace=True)
+            #print( iex_chart )
+            #get latest chart in mdb
+            mdb_chart = mdb_charts[ mdb_charts['symbol'] == mdb_symbol["symbol"] ]
+            #print( mdb_chart )
+            mdb_chart.sort_index(inplace=True)
+            #print( mdb_chart )
+            #print( mdb_chart['date'].iloc[0] )
+            #select all new charts
+            if not iex_chart.empty and not mdb_chart.empty:
+                mask = iex_chart['date'] > mdb_chart['date'].iloc[0]
+                iex_chart = iex_chart.loc[mask]
+            #iex_chart = iex_chart[ iex_chart['date'] > mdb_chart['date']  ]
             #print( iex_chart )
             #print( mdb_chart )
             #Remove existing dates
@@ -74,25 +141,37 @@ if __name__ == '__main__':
             #print( mdb_chart["date"] )
             #print( ~iex_chart["date"].isin(mdb_chart["date"]) )
             #Remove any existing dates
-            if not mdb_chart.empty and not iex_chart.empty:
-                iex_chart = iex_chart[ ~iex_chart["date"].isin(mdb_chart["date"]) ]
+            #if not mdb_chart.empty and not iex_chart.empty:
+            #    iex_chart = iex_chart[ ~iex_chart["date"].isin(mdb_chart["date"]) ]
             #print( iex_chart )
 
             if not iex_chart.empty:
                 print( str(index) + "/" + str(len(mdb_symbols.index)) + " Inserting chart for " + mdb_symbol["symbol"] )
                 #print( iex_chart )
                 #print( iex_chart.to_dict('records') )
-                #db.iex_charts.insert_many( iex_chart.to_dict('records') )
+                #print( db.iex_charts.stats(1024*1024) )
+                try:
+                    db.iex_charts.insert_many( iex_chart.to_dict('records') )
+                except BulkWriteError as bwe:
+                    print( bwe.details )
+                    raise
             else:
                 print( str(index) + "/" + str(len(mdb_symbols.index)) + " No new data for " + mdb_symbol["symbol"] )
 
     #If new dividends exist then upload them
     if insert_dividends:
         mdb_symbols = iex_tools.mdb_get_symbols()
+        currDate = datetime.datetime.now().strftime("%Y-%m-%d")
+        mdb_dividends = iex_tools.mdb_get_dividends( mdb_symbols['symbol'].tolist(), currDate, "latest" )
         #print(mdb_symbols)
         for index, mdb_symbol in mdb_symbols.iterrows():
+            #if index > 10:
+            #    break
             iex_dividends = iex_tools.iex_get_dividends( mdb_symbol["symbol"], ref_range='2y' )
-            mdb_dividends = iex_tools.mdb_get_dividends( [mdb_symbol["symbol"]] )
+            iex_dividends.sort_index(inplace=True)
+            mdb_dividend = mdb_dividends[ mdb_dividends['symbol'] == mdb_symbol['symbol'] ]
+            mdb_dividend.sort_index(inplace=True)
+            #mdb_dividends = iex_tools.mdb_get_dividends( [mdb_symbol["symbol"]] )
             #print( iex_dividends )
             #print( mdb_dividends )
             #Remove existing dates
@@ -100,8 +179,10 @@ if __name__ == '__main__':
             #print( mdb_dividends["exDate"] )
             #print( ~iex_dividends["exDate"].isin(mdb_dividends["exDate"]) )
             #Remove any existing dates
-            if not mdb_dividends.empty and not iex_dividends.empty:
-                iex_dividends = iex_dividends[ ~iex_dividends["exDate"].isin(mdb_dividends["exDate"]) ]
+            if not mdb_dividend.empty and not iex_dividends.empty:
+                mask = iex_dividends['exDate'] > mdb_dividend['exDate'].iloc[0]
+                iex_dividends = iex_dividends.loc[mask]
+                #iex_dividends = iex_dividends[ ~iex_dividends["exDate"].isin(mdb_dividends["exDate"]) ]
             #print( iex_dividends )
 
             if not iex_dividends.empty:
@@ -115,10 +196,15 @@ if __name__ == '__main__':
     #If new earnings exist then upload them
     if insert_earnings:
         mdb_symbols = iex_tools.mdb_get_symbols()
+        currDate = datetime.datetime.now().strftime("%Y-%m-%d")
+        mdb_earnings = iex_tools.mdb_get_earnings( mdb_symbols['symbol'].tolist(), currDate, "latest" )
         #print(mdb_symbols)
         for index, mdb_symbol in mdb_symbols.iterrows():
             iex_earnings = iex_tools.iex_get_earnings( mdb_symbol["symbol"] )
-            mdb_earnings = iex_tools.mdb_get_earnings( mdb_symbol["symbol"] )
+            iex_earnings.sort_index(inplace=True)
+            mdb_earning = mdb_earnings[ mdb_earnings['symbol'] == mdb_symbol['symbol'] ]
+            mdb_earning.sort_index(inplace=True)
+            #mdb_earnings = iex_tools.mdb_get_earnings( mdb_symbol["symbol"] )
             #print( iex_earnings )
             #print( mdb_earnings )
             #Remove existing dates
@@ -126,8 +212,10 @@ if __name__ == '__main__':
             #print( mdb_earnings["fiscalEndDate"] )
             #print( ~iex_earnings["fiscalEndDate"].isin(mdb_earnings["fiscalEndDate"]) )
             #Remove any existing dates
-            if not mdb_earnings.empty and not iex_earnings.empty:
-                iex_earnings = iex_earnings[ ~iex_earnings["fiscalEndDate"].isin(mdb_earnings["fiscalEndDate"]) ]
+            if not mdb_earning.empty and not iex_earnings.empty:
+                mask = iex_earnings['fiscalEndDate'] > mdb_earning['fiscalEndDate'].iloc[0]
+                iex_earnings = iex_earnings.loc[mask]
+                #iex_earnings = iex_earnings[ ~iex_earnings["fiscalEndDate"].isin(mdb_earnings["fiscalEndDate"]) ]
             #print( iex_earnings )
 
             if not iex_earnings.empty:
@@ -140,12 +228,17 @@ if __name__ == '__main__':
 
     #If new financials exist then upload them
     if insert_financials:
-        mdb_symbols = iex_tools.mdb_get_symbols()[5000:]
+        mdb_symbols = iex_tools.mdb_get_symbols()
+        currDate = datetime.datetime.now().strftime("%Y-%m-%d")
+        mdb_financials = iex_tools.mdb_get_financials( mdb_symbols['symbol'].tolist(), currDate, "latest" )
         #print(mdb_symbols)
         for index, mdb_symbol in mdb_symbols.iterrows():
             #print( "Getting data for " + mdb_symbol["symbol"] )
             iex_financials = iex_tools.iex_get_financials( mdb_symbol["symbol"] )
-            mdb_financials = iex_tools.mdb_get_financials( mdb_symbol["symbol"] )
+            iex_financials.sort_index(inplace=True)
+            mdb_financial = mdb_financials[ mdb_financials['symbol'] == mdb_symbol['symbol'] ]
+            mdb_financial.sort_index(inplace=True)
+            #mdb_financials = iex_tools.mdb_get_financials( mdb_symbol["symbol"] )
             #print( iex_financials )
             #print( mdb_financials )
             #Remove existing dates
@@ -153,8 +246,10 @@ if __name__ == '__main__':
             #print( mdb_financials["reportDate"] )
             #print( ~iex_financials["reportDate"].isin(mdb_financials["reportDate"]) )
             #Remove any existing dates
-            if not mdb_financials.empty and not iex_financials.empty:
-                iex_financials = iex_financials[ ~iex_financials["reportDate"].isin(mdb_financials["reportDate"]) ]
+            if not mdb_financial.empty and not iex_financials.empty:
+                mask = iex_financials['reportDate'] > mdb_financial['reportDate'].iloc[0]
+                iex_financials = iex_financials.loc[mask]
+                #iex_financials = iex_financials[ ~iex_financials["reportDate"].isin(mdb_financials["reportDate"]) ]
             #print( iex_financials )
 
             if not iex_financials.empty:
@@ -208,19 +303,19 @@ if __name__ == '__main__':
             results = db.iex_earnings.find( query ).sort("EPSReportDate", DESCENDING)
             earnings = pandas.DataFrame()
             for doc in results:
-                earnings = earnings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+                earnings = earnings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
             #print( earnings )
             query = { "fiscalEndDate": "2018-03-31" }
             results = db.iex_earnings.find( query ).sort("EPSReportDate", DESCENDING)
             earnings = pandas.DataFrame()
             for doc in results:
-                earnings = earnings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+                earnings = earnings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
             #print( earnings )
             query = { "symbol": "AAPL" }
             results = db.iex_earnings.find( query ).sort("EPSReportDate", DESCENDING)
             earnings = pandas.DataFrame()
             for doc in results:
-                earnings = earnings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True )
+                earnings = earnings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
             #print( earnings )
         #Next day find best stocks for n different mcap portfolios
         #Start portfolio on 2018-07-02 to allow all Q1 2018 results to be reported
@@ -319,6 +414,14 @@ if __name__ == '__main__':
         # Rank
         #print( "Cut negative PE and ROE" )
         merged = merged[(merged.peRatio > 0) & (merged.returnOnEquity > 0)]
+        #remove invalid stocks
+        #print( merged )
+        forbidden = [ "#", ".", "-" ]
+        merged = merged[ merged.apply( lambda x: not any( s in x['symbol'] for s in forbidden ), axis=1 ) ]
+        #merged = merged[ merged.apply( lambda x: "." not in x['symbol'], axis=1 ) ]
+        #merged = merged[ merged['symbol'].str.contains(".") == False ]
+        #merged = merged[ merged['symbol'].str.contains("#|.|-") == False ]
+        #print( merged )
         #print( "mcap > 50M: " + str(merged[merged["marketCap"] > 50000000].count()["marketCap"]) )
         #print( "mcap > 100M: " + str(merged[merged["marketCap"] > 100000000].count()["marketCap"]) )
         #print( "mcap > 500M: " + str(merged[merged["marketCap"] > 500000000].count()["marketCap"]) )
@@ -383,7 +486,7 @@ if __name__ == '__main__':
                                 "inceptionDate": "2018-07-02" }
                             ]
         #print( portfolio_tables )
-        insert_pf_info = True
+        insert_pf_info = False
         if insert_pf_info:
             db.pf_info.insert_many( portfolio_tables )
         #Transaction table:
@@ -426,7 +529,7 @@ if __name__ == '__main__':
                                     "commission": 0.0 }
             transaction_tables.append( transaction_table )
         #print( transaction_tables )
-        insert_pf_transactions = True
+        insert_pf_transactions = False
         if insert_pf_transactions:
             db.pf_transactions.insert_many( transaction_tables )
         #Buy stocks
@@ -454,7 +557,7 @@ if __name__ == '__main__':
                                         "commission": 0.0 }
                 transaction_tables.append( transaction_table )
         #print( transaction_tables )
-        insert_pf_transactions = True
+        insert_pf_transactions = False
         if insert_pf_transactions:
             db.pf_transactions.insert_many( transaction_tables )
 
@@ -476,7 +579,7 @@ if __name__ == '__main__':
                                     "endOfDayQuantity": 0.0,
                                     "purchaseValue": 0.0,
                                     "lastUpdated": "2018-07-02" }
-                holdings = holdings.append( pandas.DataFrame.from_dict(holding_dict, orient='index').T, ignore_index=True )
+                holdings = holdings.append( pandas.DataFrame.from_dict(holding_dict, orient='index').T, ignore_index=True, sort=False )
             #print( holdings )
             #From inception date implement transactions and update holdings table
             #Portfolio, stock symbol, End of day volumes, lastUpdated, purchaseValue
@@ -492,7 +595,7 @@ if __name__ == '__main__':
                     holding["endOfDayQuantity"] = holding["endOfDayQuantity"] + (transaction.price * transaction.volume) 
                     holding["purchaseValue"] = holding["purchaseValue"] + (transaction.price * transaction.volume)
                     holding["lastUpdated"] = transaction.date
-                    holdings = holdings.append( holding, ignore_index=True )
+                    holdings = holdings.append( holding, ignore_index=True, sort=False )
                 if transaction.type == "buy":
                     holding_dict = {}
                     if not holding.empty:
@@ -512,13 +615,13 @@ if __name__ == '__main__':
                     #holding.iloc[0]["endOfDayQuantity"] = holding["endOfDayQuantity"] + transaction.volume
                     #holding.iloc[0]["purchaseValue"] = holding["purchaseValue"] + (transaction.price * transaction.volume)
                     #holding.iloc[0]["lastUpdated"] = transaction.date
-                    holdings = holdings.append( pandas.DataFrame.from_dict(holding_dict, orient='index').T, ignore_index=True )
+                    holdings = holdings.append( pandas.DataFrame.from_dict(holding_dict, orient='index').T, ignore_index=True, sort=False )
                     cash = holdings[holdings.symbol == "USD"]
                     holdings = holdings[ ~holdings["symbol"].isin(["USD"]) ]
                     cash["endOfDayQuantity"] = cash["endOfDayQuantity"] - (transaction.price * transaction.volume)
                     cash["purchaseValue"] = cash["purchaseValue"] - (transaction.price * transaction.volume)
                     cash["lastUpdated"] = transaction.date
-                    holdings = holdings.append( cash, ignore_index=True )
+                    holdings = holdings.append( cash, ignore_index=True, sort=False )
             #print( holdings )
             insert_holdings_tx = False
             if insert_holdings_tx:
@@ -549,59 +652,84 @@ if __name__ == '__main__':
         #Calculate portfolio value - close of day prices for holdings
         #Calculate portfolio return - (close of day holdings - (close of previous day holding + purchases))/(close of previous day holding + purchases)
         #Get array of dates for a stock e.g. SPX
-        spy_dates = iex_tools.mdb_get_chart(["SPY"],"2018-06-25")["date"].sort_values(ascending=True, axis="index").tolist()
+        #spy_dates = iex_tools.mdb_get_chart(["SPY"],"2018-06-25")["date"].sort_values(ascending=True, axis="index").tolist()
         #print( spy_dates )
-        portfolios = iex_tools.mdb_get_portfolios("2018-07-02")["portfolioID"].tolist()
+        currDate = datetime.datetime.now().strftime("%Y-%m-%d")
+        portfolios = iex_tools.mdb_get_portfolios(currDate)[["portfolioID","inceptionDate"]]
+        #get all holdings
+        #for portfolios find most recent perf date
+        #while date <= currDate
         #print( portfolios )
-        for portfolio in portfolios:
+        for portfolio_index, portfolio_row in portfolios.iterrows():
+            #print( portfolio_row )
+            portfolio = portfolio_row.portfolioID
+            inceptionDate = portfolio_row.inceptionDate
             #if portfolio not in ["stocks30mcap100M"]:
             #    continue
-            holdings = iex_tools.mdb_get_holdings(portfolio,"2018-07-02")
-            transactions = iex_tools.mdb_get_transactions(portfolio,"2018-07-02")
-            #print( transactions )
+            print( 'Inserting performance tables for ' + portfolio )
+            #print( inceptionDate )
+            holdings = iex_tools.mdb_get_holdings(portfolio, inceptionDate, "after").sort_values(by="lastUpdated", ascending=False, axis="index")
+            #print( holdings )
+            date = inceptionDate
             symbols = holdings["symbol"].unique().tolist()
-            prices = iex_tools.mdb_get_chart(symbols,"2018-06-25")
+            performance = iex_tools.mdb_get_performance([portfolio], inceptionDate)
+            if not performance.empty:
+                performance.sort_values(by="date", ascending=False, axis="index", inplace=True)
+            #print( performance )
             perf_tables = []
+            prevCloseValue = 0
+            adjPrevCloseValue = 0
+            if not performance.empty:
+                #date = most recent date + 1
+                date = performance.iloc[0]["date"]
+                date = (pandas.Timestamp(date) + pandas.DateOffset(days=1)).strftime('%Y-%m-%d')
+                adjPrevCloseValue = performance.iloc[0]["adjCloseValue"]
+                prevCloseValue = performance.iloc[0]["closeValue"]
+            #prev values = most recent
+            prices = iex_tools.mdb_get_chart(symbols, date)
+            if prices.empty:
+                continue
+            transactions = iex_tools.mdb_get_transactions(portfolio, date, "after")
+            #print( transactions )
             #Loop through dates
-            for idate in range(1,len(spy_dates)):
-                #if idate > 10:
+            #print( date )
+            while date <= currDate:
+                #if date > "2018-07-30":
+                #    date = (pandas.Timestamp(date) + pandas.DateOffset(days=1)).strftime('%Y-%m-%d')
                 #    continue
-                #print( spy_dates[idate] )
+                #print( date )
                 #Find table of holdings on that date and previous day
                 #print( holdings[holdings.lastUpdated <= spy_dates[idate-1]] )
                 #Value the holdings using close of day prices + cash
-                prevCloseValue = 0
                 closeValue = 0
-                adjPrevCloseValue = 0
                 adjCloseValue = 0
-                prev_day_holding = holdings[holdings.lastUpdated <= spy_dates[idate-1]]
-                curr_day_holding = holdings[holdings.lastUpdated <= spy_dates[idate]]
-                prev_day_holding = pandas.merge(prev_day_holding,prices[prices.date == spy_dates[idate-1]],how='left',left_on=["symbol"],right_on=["symbol"],sort=False)
-                curr_day_holding = pandas.merge(curr_day_holding,prices[prices.date == spy_dates[idate]],how='left',left_on=["symbol"],right_on=["symbol"],sort=False)
-                #print( curr_day_holding )
+                holdings_date = holdings[holdings.lastUpdated <= date]
+                #print( holdings_date )
+                #print( holdings_date.reset_index().groupby(['symbol'], sort=False)['lastUpdated'].idxmax() )
+                holdings_date = holdings_date[holdings_date.groupby(['symbol'], sort=False)['lastUpdated'].transform(max) == holdings['lastUpdated']]
+                #print( holdings_date )
+                holdings_date = pandas.merge(holdings_date,prices[prices.date == date],how='left',left_on=["symbol"],right_on=["symbol"],sort=False)
+                #print( holdings_date )
                 #Check that all stocks have a price else continue
                 #print( prev_day_holding )
                 #print( curr_day_holding )
-                if prev_day_holding[prev_day_holding.symbol != "USD"].isnull().values.any():
-                    continue
-                if curr_day_holding[curr_day_holding.symbol != "USD"].isnull().values.any():
+                #Skip any day where there aren't prices for all stocks
+                if holdings_date[holdings_date.symbol != "USD"].isnull().values.any():
+                    date = (pandas.Timestamp(date) + pandas.DateOffset(days=1)).strftime('%Y-%m-%d')
                     continue
                 #print( prev_day_holding )
                 #print( curr_day_holding )
-                if not prev_day_holding.empty:
-                    for index, holding in prev_day_holding.iterrows():
-                        if holding.symbol == "USD":
-                            prevCloseValue = prevCloseValue + (holding.endOfDayQuantity)
-                        else:
-                            prevCloseValue = prevCloseValue + (holding.endOfDayQuantity * holding.close)
-                if not curr_day_holding.empty:
-                    for index, holding in curr_day_holding.iterrows():
+                if not holdings_date.empty:
+                    for index, holding in holdings_date.iterrows():
                         if holding.symbol == "USD":
                             closeValue = closeValue + (holding.endOfDayQuantity)
                         else:
                             closeValue = closeValue + (holding.endOfDayQuantity * holding.close)
-                deposits = transactions[(transactions.date == spy_dates[idate]) & (transactions.type == "deposit")]
-                withdrawals = transactions[(transactions.date == spy_dates[idate]) & (transactions.type == "withdrawal")]
+                deposits = pandas.DataFrame()
+                withdrawals = pandas.DataFrame()
+                if not transactions.empty:
+                    deposits = transactions[(transactions.date == date) & (transactions.type == "deposit")]
+                    withdrawals = transactions[(transactions.date == date) & (transactions.type == "withdrawal")]
                 #print( deposits )
                 #print( withdrawals )
                 adjPrevCloseValue = prevCloseValue
@@ -611,7 +739,7 @@ if __name__ == '__main__':
                         adjPrevCloseValue = adjPrevCloseValue + (deposit.volume * deposit.price)
                 if not withdrawals.empty:
                     for index, withdrawal in withdrawals.iterrows():
-                        adCloseValue = adjCloseValue + (withdrawal.volume * withdrawal.price)
+                        adjCloseValue = adjCloseValue + (withdrawal.volume * withdrawal.price)
                 #Value the holdings using close of previous day prices + cash (zero if no holdings)
                 #Find if any deposits were made that day
                 #print( prevCloseValue )
@@ -619,9 +747,10 @@ if __name__ == '__main__':
                 #build portfolio performance table
                 #portfolioID, date, endOfDayValue, percentChange
                 if adjPrevCloseValue == 0:
+                    date = (pandas.Timestamp(date) + pandas.DateOffset(days=1)).strftime('%Y-%m-%d')
                     continue
                 perf_table = { "portfolioID": portfolio,
-                                "date": spy_dates[idate],
+                                "date": date,
                                 "prevCloseValue": prevCloseValue,
                                 "closeValue": closeValue,
                                 "adjPrevCloseValue": adjPrevCloseValue,
@@ -629,6 +758,13 @@ if __name__ == '__main__':
                                 "percentReturn": 100.*((adjCloseValue-adjPrevCloseValue)/adjPrevCloseValue) }
                 #print( perf_table )
                 perf_tables.append( perf_table )
+                prevCloseValue = closeValue
+                adjPrevCloseValue = adjCloseValue
+                #print( datetime.datetime.strptime(date, '%Y-%m-%d') )
+                #print( datetime.datetime.strptime(date, '%Y-%m-%d') + datetime.timedelta(days=1) )
+                #date = (datetime.datetime.strptime(date, '%Y-%m-%d') + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+                date = (pandas.Timestamp(date) + pandas.DateOffset(days=1)).strftime('%Y-%m-%d')
+                #print( date )
             #print( perf_tables )
             insert_pf_performance = True
             if insert_pf_performance:
