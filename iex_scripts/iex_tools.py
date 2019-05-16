@@ -25,10 +25,15 @@ from iex import Stock
 
 # reorder columns
 def set_column_sequence(dataframe, seq, front=True):
-    '''Takes a dataframe and a subsequence of its columns,
-       returns dataframe with seq as first columns if "front" is True,
-       and seq as last columns if "front" is False.
-    '''
+    """
+    Takes a dataframe and a subsequence of its columns,
+    returns dataframe with seq as first columns if "front" is True,
+    and seq as last columns if "front" is False.
+    @params:
+        dataframe   - Required  : Pandas dataframe to reorder (Pandas.DataFrame)
+        seq         - Required  : New order ([Int])
+        front       - Optional  : Front or back (Bool)
+    """
     cols = seq[:] # copy so we don't mutate seq
     for x in dataframe.columns:
         if x not in cols:
@@ -48,26 +53,37 @@ def set_column_sequence(dataframe, seq, front=True):
 ################################################
         
 def iex_get_symbols(ref_symbol=None, ref_type=None):
+    """
+    Get symbols from IEX
+    @params:
+        ref_symbol  - Optional  : matching symbols (Str)
+        ref_type    - Optional  : matching type (Str)
+    """
 
     reference.output_format = 'dataframe'
     symbols = reference.symbols()
     
+    #Select only matching symbols
     if ref_symbol is not None:
         symbols = symbols[symbols.symbol == ref_symbol]
+    #Select only matching types
     if ref_type is not None:
         symbols = symbols[symbols.type == ref_type]
     
     return symbols
 
 def iex_get_company(ref_symbol):
+    """
+    Get company information from IEX
+    @params:
+        ref_symbol  - Required  : symbols ([Str])
+    """
 
     stock = Stock( ref_symbol )
     company = stock.company_table()
-    #print( company )
-    #remove unnecesary data
+    #Remove unnecesary data
     company.drop(["exchange","website","CEO","issueType"], axis=1, errors='ignore', inplace=True)
-    #add symbol name
-    #print( company )
+    #Reorder dataframe
     if not company.empty:
         company = set_column_sequence(company, ["symbol","companyName","industry","description","sector"])
         #print( company )
@@ -75,123 +91,88 @@ def iex_get_company(ref_symbol):
     return company
 
 def iex_get_chart(ref_symbol, ref_range='1m'):
+    """
+    Get charts from IEX
+    @params:
+        ref_symbol  - Required  : symbol (Str)
+        ref_range   - Optional  : date range (Str)
+    """
 
     stock = Stock( ref_symbol )
     chart = stock.chart_table(ref_range)
-    #print( chart )
-    #remove unnecesary data
+    #Remove unnecesary data
     chart.drop(["high","low","volume","unadjustedVolume","change","changePercent","vwap","label","changeOverTime"], axis=1, errors='ignore', inplace=True)
-    #add symbol name
-    #print( chart )
+    #Add symbol name column
     if not chart.empty:
         chart_len = len( chart.index )
         chart_arr = [ref_symbol] * chart_len
-        #print( chart_arr )
         chart.insert(loc=0, column='symbol', value=chart_arr)
+        #Reorder dataframe
         chart = set_column_sequence(chart, ["symbol","date"])
-        #print( chart )
 
     return chart
 
 def iex_get_dividends(ref_symbol, ref_range='1m'):
+    """
+    Get dividends from IEX
+    @params:
+        ref_symbol  - Required  : symbol (Str)
+        ref_range   - Optional  : date range (Str)
+    """
 
     stock = Stock( ref_symbol )
     dividends = stock.dividends_table(ref_range)
-    #print( dividends )
-    #remove unnecesary data
+    #Remove unnecesary data
     dividends.drop(["recordDate","declaredDate","flag","type","qualified","indicated"], axis=1, errors='ignore', inplace=True)
-    #add symbol name
-    #print( dividends )
+    #Add symbol name column
     if not dividends.empty:
         dividends_len = len( dividends.index )
         dividends_arr = [ref_symbol] * dividends_len
-        #print( dividends_arr )
         dividends.insert(loc=0, column='symbol', value=dividends_arr)
+        #Reorder dataframe
         dividends = set_column_sequence(dividends, ["symbol","exDate","paymentDate","amount"])
-        #print( dividends )
 
     return dividends
 
 def iex_get_earnings(ref_symbol):
+    """
+    Get earnings from IEX
+    @params:
+        ref_symbol  - Required  : symbol (Str)
+    """
 
     stock = Stock( ref_symbol )
     earnings = stock.earnings_table()
-    #print( earnings_dict )
-    #remove unnecesary data
-    #print( earnings_dict.get("earnings") )
-    #earnings = pandas.DataFrame.from_dict(earnings_dict.get("earnings"))
+    #Remove unnecesary data
     earnings.drop(["consensusEPS","estimatedEPS","numberOfEstimates","EPSSurpriseDollar","yearAgoChangePercent","estimatedChangePercent","symbolId"], axis=1, errors='ignore', inplace=True)
-    #add symbol name
-    #print( earnings )
+    #Add symbol name
     if not earnings.empty:
         earnings_len = len( earnings.index )
         earnings_arr = [ref_symbol] * earnings_len
-        #print( earnings_arr )
         earnings.insert(loc=0, column='symbol', value=earnings_arr)
+        #Reorder dataframe
         earnings = set_column_sequence(earnings, ["symbol","actualEPS","announceTime","EPSReportDate","fiscalPeriod","fiscalEndDate"])
-        #print( earnings )
 
     return earnings
 
 def iex_get_financials(ref_symbol):
+    """
+    Get financials from IEX
+    @params:
+        ref_symbol  - Required  : symbol (Str)
+    """
 
     stock = Stock( ref_symbol )
     financials = stock.financials_table()
-    #print( stock.financials() )
-    #print( financials_dict )
-    #remove unnecesary data
-    #print( financials_dict.get("financials") )
-    #financials = pandas.DataFrame.from_dict(financials_dict.get("financials"))
-    #financials.drop(["consensusEPS","estimatedEPS","numberOfEstimates","EPSSurpriseDollar","yearAgoChangePercent","estimatedChangePercent","symbolId"], axis=1, errors='ignore', inplace=True)
-    #add symbol name
-    #print( financials )
+    #Add symbol name
     if not financials.empty:
         financials_len = len( financials.index )
         financials_arr = [ref_symbol] * financials_len
-        #print( financials_arr )
         financials.insert(loc=0, column='symbol', value=financials_arr)
+        #Reorder dataframe
         financials = set_column_sequence(financials, ["symbol","reportDate"])
-        #print( financials )
 
     return financials
-
-#Sandbox function for testing only
-def sandbox():
-
-    reference.output_format = 'dataframe'
-    symbols = reference.symbols()
-
-    symbols = symbols[symbols.type == 'cs']
-
-    symbols.reset_index(drop=True, inplace=True)
-    symbols = symbols[0:100]
-    symbols_copy = symbols
-
-    for index, symbol in symbols_copy.iterrows():
-        stock = Stock(symbol["symbol"])
-        marketcap = stock.stats()["marketcap"]
-        print( marketcap )
-        print( stock.company()["companyName"] )
-        print( stock.company()["sector"] )
-        if marketcap < 50000000:
-            print( symbol["symbol"] )
-            symbols.drop(index, axis=0, inplace=True)
-
-    symbols.reset_index(drop=True, inplace=True)
-
-    print( symbols )
-
-#Another sandbox function
-def sandbox2():
-
-    query = { "symbol": "WAB#" }
-    #print( query )
-
-    db = get_mongodb()
-
-    db.iex_symbols.delete_one(query)
-
-
 
 
 ################################################
@@ -199,6 +180,9 @@ def sandbox2():
 ################################################
 
 def get_mongodb():
+    """
+    Return MongoDB database object
+    """
 
     connection_params = {
         'user': 'jwalker',
@@ -218,9 +202,13 @@ def get_mongodb():
     return db
 
 def mdb_new_symbol( symbol ):
+    """
+    Is symbol already in MongoDB?
+    @params:
+        symbol  - Required  : symbol (Dataframe)
+    """
 
     query = { "symbol": symbol["symbol"] }
-    #print( query )
 
     db = get_mongodb()
 
@@ -238,10 +226,12 @@ def mdb_new_symbol( symbol ):
         else:
             entry_match = False
 
-    #print( entry_match )
     return not entry_match
 
 def mdb_get_symbols():
+    """
+    Return symbols from MongoDB
+    """
 
     db = get_mongodb()
 
@@ -258,24 +248,23 @@ def mdb_get_symbols():
         },
         { "$sort": { "symbol": ASCENDING } }
     ])
-    #results = results.sort("symbol", ASCENDING)
 
     symbols = pandas.DataFrame()
     for doc in results:
-        #print( doc )
-        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
         symbols = symbols.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
-        #print( symbols )
-        #index = index+1
 
     symbols.drop("_id", axis=1, inplace=True)
     symbols = symbols[symbols.isEnabled != False]
     symbols.reset_index(drop=True, inplace=True)
-    #print( symbols )
 
     return symbols
 
 def mdb_get_company(symbol):
+    """
+    Return company information from MongoDB
+    @params:
+        symbol  - Required  : symbol list ([Str])
+    """
 
     db = get_mongodb()
 
@@ -285,33 +274,36 @@ def mdb_get_company(symbol):
 
     company = pandas.DataFrame()
     for doc in results:
-        #print( doc )
-        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
         company = company.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
-        #print( symbols )
-        #index = index+1
 
     company.drop("_id", axis=1, errors='ignore', inplace=True)
-    #symbols = symbols[symbols.isEnabled != False]
     company.reset_index(drop=True, inplace=True)
-    #print( chart )
 
     return company
 
-#when = "after"
-#when = "latest"
 def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
+    """
+    Return company information from MongoDB
+    @params:
+        ref_symbol  - Required  : symbol list ([Str])
+        ref_date    - Optional  : date YYYY-MM-DD (Str)
+        when        - Optional  : after, on, latest (Str)
+    """
 
     db = get_mongodb()
 
     query = []
 
-    gte_date = (pandas.Timestamp(ref_date) + pandas.DateOffset(days=-100)).strftime('%Y-%m-%d')
+    #No more than 50 days ago
+    gte_date = (pandas.Timestamp(ref_date) + pandas.DateOffset(days=-50)).strftime('%Y-%m-%d')
 
     if when == "after":
         query = { "symbol": { "$in": ref_symbol },
                     "date": { "$gte": ref_date } }
-    else:
+    elif when == "on":
+        query = { "symbol": { "$in": ref_symbol },
+                    "date": ref_date }
+    elif when == "latest":
         query = [
                     { "$match": { "symbol": { "$in": ref_symbol },
                                     "date": { "$lte": ref_date },
@@ -328,34 +320,33 @@ def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
                     },
                     { "$sort": { "symbol": ASCENDING } }
                 ]
-
-    #print( query )
+    else:
+        sys.exit("when not in [after, on, latest]!")
 
     results = []
 
-    if when == "after":
+    if when == "after" or when == "on":
         results = db.iex_charts.find( query ).sort("date", DESCENDING)
     else:
         results = db.iex_charts.aggregate( query )
 
     chart = pandas.DataFrame()
     for doc in results:
-        #print( doc )
-        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
         chart = chart.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
-        #print( symbols )
-        #index = index+1
 
     chart.drop("_id", axis=1, errors='ignore', inplace=True)
-    #symbols = symbols[symbols.isEnabled != False]
     chart.reset_index(drop=True, inplace=True)
-    #print( chart )
 
     return chart
-   
-#when = after
-#when = latest
+
 def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01", when = "after"):
+    """
+    Return company information from MongoDB
+    @params:
+        ref_symbol  - Required  : symbol list ([Str])
+        ref_date    - Optional  : date YYYY-MM-DD (Str)
+        when        - Optional  : after, latest (Str)
+    """
 
     db = get_mongodb()
 
@@ -364,7 +355,7 @@ def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01", when = "after"):
     if when == "after":
         query = { "symbol": { "$in": ref_symbol },
                     "exDate": { "$gte": ref_date } }
-    else:
+    elif when == "latest":
         query = [
                     { "$match": { "symbol": { "$in": ref_symbol },
                                     "exDate": { "$lte": ref_date } } },
@@ -380,7 +371,8 @@ def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01", when = "after"):
                     },
                     { "$sort": { "symbol": ASCENDING } }
                 ]
-        #print( query )
+    else:
+        sys.exit("when not in [after, latest]")
 
     results = []
 
@@ -391,22 +383,18 @@ def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01", when = "after"):
 
     dividends = pandas.DataFrame()
     for doc in results:
-        #print( doc )
-        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
         dividends = dividends.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
-        #print( symbols )
-        #index = index+1
 
     dividends.drop("_id", axis=1, errors='ignore', inplace=True)
-    #symbols = symbols[symbols.isEnabled != False]
     dividends.reset_index(drop=True, inplace=True)
-    #print( dividends )
 
     return dividends
 
 #when = after
 #when = latest
-def mdb_get_earnings(ref_symbol, ref_date = "1900-01-01", when = "after"):
+#date_type = fiscalEndDate
+#date_type = EPSReportDate
+def mdb_get_earnings(ref_symbol, ref_date = "1900-01-01", when = "after", date_type = "fiscalEndDate"):
 
     db = get_mongodb()
 
@@ -414,12 +402,12 @@ def mdb_get_earnings(ref_symbol, ref_date = "1900-01-01", when = "after"):
 
     if when == "after":
         query = { "symbol": { "$in": ref_symbol },
-                    "fiscalEndDate": { "$gte": ref_date } }
+                    date_type: { "$gte": ref_date } }
     else:
         query = [
                     { "$match": { "symbol": { "$in": ref_symbol },
-                                    "fiscalEndDate": { "$lte": ref_date } } },
-                    { "$sort": { "fiscalEndDate": DESCENDING } },
+                                    date_type: { "$lte": ref_date } } },
+                    { "$sort": { date_type: DESCENDING } },
                     { "$group": {
                         "_id": "$symbol",
                         "symbols": { "$push": "$$ROOT" }
@@ -436,7 +424,7 @@ def mdb_get_earnings(ref_symbol, ref_date = "1900-01-01", when = "after"):
     results = []
 
     if when == "after":
-        results = db.iex_earnings.find( query ).sort("fiscalEndDate", DESCENDING)
+        results = db.iex_earnings.find( query ).sort(date_type, DESCENDING)
     else:
         results = db.iex_earnings.aggregate( query )
 
@@ -521,10 +509,12 @@ def mdb_get_portfolios(date):
     portfolios.drop("_id", axis=1, inplace=True)
     #symbols = symbols[symbols.isEnabled != False]
     #symbols.reset_index(drop=True, inplace=True)
-    #print( symbols )
+    #print( portfolios.columns.tolist() )
+    #print( portfolios['portfolioID'] )
 
     return portfolios
 
+#when = on, after
 def mdb_get_transactions(portfolioID, date, when = "on"):
 
     db = get_mongodb()
@@ -576,7 +566,7 @@ def mdb_get_holdings(portfolioID, date = " 1990-01-01", when = "on"):
                     },
                     { "$sort": { "symbol": ASCENDING } }
                 ]
-    else:
+    elif when == "after":
         query = { "portfolioID": portfolioID,
                     "lastUpdated": { "$gte": date } }
 
@@ -626,3 +616,55 @@ def mdb_get_performance(ref_portfolioID, ref_date = "1990-01-01"):
     #print( performance )
 
     return performance
+
+#when = "on, "latest"
+def mdb_get_stock_list(ref_date = "1990-01-01", when = "on"):
+
+    db = get_mongodb()
+
+    query = []
+
+    gte_date = (pandas.Timestamp(ref_date) + pandas.DateOffset(days=-50)).strftime('%Y-%m-%d')
+
+    if when == "on":
+        query = { "date": ref_date }
+    elif when == "latest":
+        query = [
+                    { "$match": { "date": { "$lte": ref_date },
+                                    "date": { "$gte": gte_date } } },
+                    { "$sort": { "date": DESCENDING } },
+                    { "$group": {
+                        "_id": "$symbol",
+                        "symbols": { "$push": "$$ROOT" }
+                        }
+                    },
+                    { "$replaceRoot": {
+                        "newRoot": { "$arrayElemAt": ["$symbols", 0] }
+                        }
+                    },
+                    { "$sort": { "symbol": ASCENDING } }
+                ]
+
+    #print( query )
+
+    results = []
+
+    if when == "on":
+        results = db.pf_stock_list.find( query )
+    elif when == "latest":
+        results = db.pf_stock_list.aggregate( query )
+
+    stock_list = pandas.DataFrame()
+    for doc in results:
+        #print( doc )
+        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
+        stock_list = stock_list.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
+        #print( symbols )
+        #index = index+1
+
+    stock_list.drop("_id", axis=1, errors='ignore', inplace=True)
+    #symbols = symbols[symbols.isEnabled != False]
+    stock_list.reset_index(drop=True, inplace=True)
+    #print( chart )
+
+    return stock_list
