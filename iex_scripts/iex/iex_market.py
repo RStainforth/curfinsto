@@ -12,8 +12,7 @@ from iex.constants import (CHART_RANGES,
                            RANGES,
                            DATE_FIELDS,
                            BASE_URL,
-                           BASE_SIO_URL,
-                           BASE_SIO_VERSION)
+                           TOKEN)
 
 from socketIO_client_nexus import (SocketIO,
                                    SocketIONamespace)
@@ -57,7 +56,7 @@ class IexMarket:
 
     def _get(self, url, params={}):
         request_url =f"{BASE_URL}"
-        response = requests.get(f"{request_url}/{url}", params=params)
+        response = requests.get(f"{request_url}/{url}/{TOKEN}", params=params)
         if response.status_code != 200:
             raise Exception(f"{response.status_code}: {response.content.decode('utf-8')}")
         result = response.json()

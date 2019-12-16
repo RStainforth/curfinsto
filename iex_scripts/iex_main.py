@@ -3,8 +3,7 @@
 # Date: Feb 11th, 2019
 # Brief: A short script that uses the 'iex_tools' module to 
 #        extract stock information from the IEX API
-# Usage: ./iex_main
-# Would get all new stock information
+# Usage: python3 iex_main.py
 
 import iex_tools
 from utils import printProgressBar
@@ -23,18 +22,20 @@ import datetime
 if __name__ == '__main__':
 
     #Flags for inserting specific data types
-    insert_symbols = True
-    insert_company = True
+    insert_symbols = False
+    insert_company = False
     delete_prices = False
+    delete_duplicates = False
     insert_prices = True
-    insert_dividends = True
-    insert_earnings = True
-    insert_financials = True
+    insert_dividends = False
+    insert_earnings = False
+    insert_financials = False
     insert_portfolio = False
-    insert_holdings = True
-    update_holdings = True
-    insert_performance = True
-    insert_stock_list = True
+    insert_transactions = False
+    insert_holdings = False
+    update_holdings = False
+    insert_performance = False
+    insert_stock_list = False
 
     #Get database connection
     db = iex_tools.get_mongodb()
@@ -62,18 +63,23 @@ if __name__ == '__main__':
             forbidden = ["#"]
             if any( x in symbol["symbol"] for x in forbidden):
                 #Update progress bar
-                printProgressBar(index+1, len(symbols.index), prefix = 'Progress:', suffix = "Symbol contains forbidden character: " + symbol["symbol"] + "      ", length = 50)
+                printProgressBar(index+1, len(symbols.index), prefix = 'Progress:', suffix = "Symbol contains forbidden character: " + symbol["symbol"] + "                     ", length = 50)
                 continue
+            #If MongoDB empty insert symbol
+            if mdb_symbols.empty:
+                #Update progress bar
+                printProgressBar(index+1, len(symbols.index), prefix = 'Progress:', suffix = "Inserting new symbol: " + symbol["symbol"] + "                     ", length = 50)
+                db.iex_symbols.insert_one( symbol.to_dict() )
             #Is symbol already in MongoDB
             mask = (mdb_symbols['iexId'] == symbol['iexId']) & (mdb_symbols['isEnabled'] == symbol['isEnabled']) & (mdb_symbols['name'] == symbol['name']) & (mdb_symbols['type'] == symbol['type']) 
             #Insert if not in MongoDB
             if mdb_symbols.loc[mask].empty:
                 #Update progress bar
-                printProgressBar(index+1, len(symbols.index), prefix = 'Progress:', suffix = "Inserting new symbol: " + symbol["symbol"] + "      ", length = 50)
+                printProgressBar(index+1, len(symbols.index), prefix = 'Progress:', suffix = "Inserting new symbol: " + symbol["symbol"] + "                     ", length = 50)
                 db.iex_symbols.insert_one( symbol.to_dict() )
             else:
                 #Update progress bar
-                printProgressBar(index+1, len(symbols.index), prefix = 'Progress:', suffix = "Symbol " + symbol["symbol"] + " already exists      ", length = 50)
+                printProgressBar(index+1, len(symbols.index), prefix = 'Progress:', suffix = "Symbol " + symbol["symbol"] + " already exists                     ", length = 50)
 
     #If new company exists then upload them
     if insert_company:
@@ -107,40 +113,65 @@ if __name__ == '__main__':
         query = { "date": { "$lt": "2018-01-01" } }
         db.iex_charts.delete_many( query )
 
+    #Delete duplicate entries from prices which were accidentally introduced
+    if delete_duplicates:
+        iex_tools.mdb_delete_duplicates()
+
     #If new prices exist then upload them
     if insert_prices:
         print( "Insert new charts" )
         #Get all symbols in MongoDB
-        mdb_symbols = iex_tools.mdb_get_symbols()
+        mdb_symbols_full = iex_tools.mdb_get_symbols()
         #Get current date
         currDate = datetime.datetime.now().strftime("%Y-%m-%d")
-        #Get latest price in MongoDB for each symbol up to 50 days ago
-        mdb_charts = iex_tools.mdb_get_chart( mdb_symbols["symbol"].tolist(), currDate, "latest" )
         #Initial call to print 0% progress
-        printProgressBar(0, len(mdb_symbols.index), prefix = 'Progress:', suffix = '', length = 50)
-        #Loop through symbols
-        for index, mdb_symbol in mdb_symbols.iterrows():
-            #Get 1y of charts from IEX
-            iex_chart = iex_tools.iex_get_chart( mdb_symbol["symbol"], ref_range='1y' )
-            #Get matching chart in MongoDB
-            mdb_chart = mdb_charts[ mdb_charts['symbol'] == mdb_symbol["symbol"] ]
-            #Select charts more recent than MongoDB
-            if not iex_chart.empty and not mdb_chart.empty:
-                mask = iex_chart['date'] > mdb_chart['date'].iloc[0]
-                iex_chart = iex_chart.loc[mask]
-            #Insert if charts exist
-            if not iex_chart.empty:
-                #Update progress bar
-                printProgressBar(index+1, len(mdb_symbols.index), prefix = 'Progress:', suffix = "Inserting chart for " + mdb_symbol["symbol"] + "      ", length = 50)
-                #Print write error if couldn't insert charts
-                try:
-                    db.iex_charts.insert_many( iex_chart.to_dict('records') )
-                except BulkWriteError as bwe:
-                    print( bwe.details )
-                    raise
-            else:
-                #Update progress bar
-                printProgressBar(index+1, len(mdb_symbols.index), prefix = 'Progress:', suffix = "No new data for " + mdb_symbol["symbol"] + "      ", length = 50)
+        printProgressBar(0, len(mdb_symbols_full.index), prefix = 'Progress:', suffix = '', length = 50)
+        idx_min = 0
+        query_num = 1000
+        flag = False
+        while idx_min < len(mdb_symbols_full.index):
+            #if idx_min > 1:
+            #    break
+            idx_max = idx_min + query_num
+            if idx_max > len(mdb_symbols_full.index):
+                idx_max = len(mdb_symbols_full.index)
+            mdb_symbols = mdb_symbols_full.iloc[ idx_min:idx_max , : ]
+            mdb_symbols.reset_index(drop=True, inplace=True)
+            #Get latest price in MongoDB for each symbol up to 50 days ago
+            mdb_charts = iex_tools.mdb_get_chart( mdb_symbols["symbol"].tolist(), currDate, "latest" )
+            #print( mdb_charts )
+            #break
+            #Loop through symbols
+            for index, mdb_symbol in mdb_symbols.iterrows():
+                #Get 1y of charts from IEX
+                #print( mdb_symbol )
+                #print( mdb_symbol["symbol"] )
+                if mdb_symbol["symbol"] == "HSTM":
+                    flag = True
+                if not flag:
+                    continue
+                iex_chart = iex_tools.iex_get_chart( mdb_symbol["symbol"], ref_range='ytd' )
+                #Get matching chart in MongoDB
+                mdb_chart = mdb_charts[ mdb_charts['symbol'] == mdb_symbol["symbol"] ]
+                #Select charts more recent than MongoDB
+                if not iex_chart.empty and not mdb_chart.empty:
+                    mask = iex_chart['date'] > mdb_chart['date'].iloc[0]
+                    iex_chart = iex_chart.loc[mask]
+                #Insert if charts exist
+                #print( iex_chart )
+                if not iex_chart.empty:
+                    #Update progress bar
+                    printProgressBar(idx_min+index+1, len(mdb_symbols_full.index), prefix = 'Progress:', suffix = "Inserting chart for " + mdb_symbol["symbol"] + "      ", length = 50)
+                    #Print write error if couldn't insert charts
+                    try:
+                        db.iex_charts.insert_many( iex_chart.to_dict('records') )
+                    except BulkWriteError as bwe:
+                        print( bwe.details )
+                        raise
+                else:
+                    #Update progress bar
+                    printProgressBar(idx_min+index+1, len(mdb_symbols_full.index), prefix = 'Progress:', suffix = "No new data for " + mdb_symbol["symbol"] + "      ", length = 50)
+            idx_min = idx_min + query_num
 
     #If new dividends exist then upload them
     if insert_dividends:
@@ -321,78 +352,13 @@ if __name__ == '__main__':
         if insert_pf_info:
             print( "Inserting portfolio tables" )
             db.pf_info.insert_many( portfolio_tables )
+
+    if insert_transactions:
         print( "Create portfolio transaction tables" )
-        #Get latest set of earnings for given date
-        #Start portfolio on 2018-07-02 to allow all Q1 2018 results to be reported
-        symbols = iex_tools.mdb_get_symbols()['symbol'].tolist()
-        print( "Query earnings" )
-        earnings = iex_tools.mdb_get_earnings(symbols, "2018-07-02", "latest", "EPSReportDate")
-        earnings = earnings[["EPSReportDate","actualEPS","fiscalEndDate","fiscalPeriod","symbol"]]
-        #Get financials within 6 months of inception date
-        print( "Query financials" )
-        financials = iex_tools.mdb_get_financials(symbols, "2018-01-01", "after")
-        financials = financials[ financials['reportDate'] <= earnings['fiscalEndDate'].max() ]
-        financials = financials[["symbol","reportDate","netIncome","shareholderEquity"]]
-        #Get prices for inception date
-        print( "Query prices" )
-        prices = iex_tools.mdb_get_chart(symbols, "2018-07-02", "on")
-        #Get company data
-        company = iex_tools.mdb_get_company( symbols )
-        company = company[['symbol','companyName','industry','sector']]
-        #Merge dataframes together
-        print( "Merge dataframes" )
-        merged = pandas.merge(earnings,financials,how='inner',left_on=["symbol","fiscalEndDate"],right_on=["symbol","reportDate"],sort=False)
-        merged = pandas.merge(merged,prices,how='inner',on="symbol",sort=False)
-        merged = pandas.merge(merged,company,how='inner',on='symbol',sort=False)
-        #Remove any rows with missing values
-        merged = merged.dropna(axis=0, subset=["netIncome","actualEPS","open","shareholderEquity"])
-        #Calculate marketCap value
-        # price * netIncome / EPS = price * sharesOutstanding = mcap
-        # Actually not 100% accurate, should be netIncome - preferred dividend
-        # Doesn't perfectly match IEX value or google - probably good enough
-        merged["sharesOutstanding"] = merged.netIncome / merged.actualEPS
-        merged["marketCap"] = merged.sharesOutstanding * merged.open
-        #Calculate PE, ROE, and ratio
-        merged["peRatio"] = merged.open / merged.actualEPS
-        merged["returnOnEquity"] = merged.netIncome / merged.shareholderEquity
-        merged["peROERatio"] = merged.peRatio / merged.returnOnEquity
-        #Count number of stocks above mcap value
-        # A useful indicator of how universe compares to S&P500
-        print( "Universe before cuts..." )
-        print( "mcap > 50M: " + str(merged[merged["marketCap"] > 50000000].count()["marketCap"]) )
-        print( "mcap > 100M: " + str(merged[merged["marketCap"] > 100000000].count()["marketCap"]) )
-        print( "mcap > 500M: " + str(merged[merged["marketCap"] > 500000000].count()["marketCap"]) )
-        print( "mcap > 1B: " + str(merged[merged["marketCap"] > 1000000000].count()["marketCap"]) )
-        print( "mcap > 5B: " + str(merged[merged["marketCap"] > 5000000000].count()["marketCap"]) )
-        print( "mcap > 10B: " + str(merged[merged["marketCap"] > 10000000000].count()["marketCap"]) )
-        print( "mcap > 50B: " + str(merged[merged["marketCap"] > 50000000000].count()["marketCap"]) )
-        print( "mcap > 100B: " + str(merged[merged["marketCap"] > 100000000000].count()["marketCap"]) )
-        #Rank stocks
-        #Cut negative PE and ROE
-        merged = merged[(merged.peRatio > 0) & (merged.returnOnEquity > 0)]
-        #Remove invalid stock symbols, and different voting options
-        # Do the different voting options affect marketCap?
-        forbidden = [ "#", ".", "-" ]
-        merged = merged[ merged.apply( lambda x: not any( s in x['symbol'] for s in forbidden ), axis=1 ) ]
-        #Remove American Depositary Shares
-        ads_str = 'American Depositary Shares'
-        merged = merged[ merged.apply( lambda x: ads_str not in x['companyName'], axis=1 ) ]
-        #Remove industries that do not compare well
-        # e.g. Companies that have investments as assets
-        forbidden_industry = ['Brokers & Exchanges','REITs','Asset Management','Banks']
-        merged = merged[ ~merged.industry.isin( forbidden_industry ) ]
-        #Count number of stocks after cuts
-        print( "Universe after cuts..." )
-        print( "mcap > 50M: " + str(merged[merged["marketCap"] > 50000000].count()["marketCap"]) )
-        print( "mcap > 100M: " + str(merged[merged["marketCap"] > 100000000].count()["marketCap"]) )
-        print( "mcap > 500M: " + str(merged[merged["marketCap"] > 500000000].count()["marketCap"]) )
-        print( "mcap > 1B: " + str(merged[merged["marketCap"] > 1000000000].count()["marketCap"]) )
-        print( "mcap > 5B: " + str(merged[merged["marketCap"] > 5000000000].count()["marketCap"]) )
-        print( "mcap > 10B: " + str(merged[merged["marketCap"] > 10000000000].count()["marketCap"]) )
-        print( "mcap > 50B: " + str(merged[merged["marketCap"] > 50000000000].count()["marketCap"]) )
-        print( "mcap > 100B: " + str(merged[merged["marketCap"] > 100000000000].count()["marketCap"]) )
-        #Order by peROERatio
-        merged = merged.sort_values(by="peROERatio", ascending=True, axis="index")
+        transactionDate = "2018-07-02"
+        dayBeforeDate = (pandas.Timestamp(transactionDate) + pandas.DateOffset(days=-1)).strftime('%Y-%m-%d')
+        #Get ranked stock list for current date
+        merged = iex_tools.mdb_calculate_top_stocks(dayBeforeDate)
         #Define dataframes containing stocks to be bought
         stocks30mcap100M = merged[merged["marketCap"] > 100000000].head(30).reset_index(drop=True)
         stocks30mcap500M = merged[merged["marketCap"] > 500000000].head(30).reset_index(drop=True)
@@ -446,13 +412,13 @@ if __name__ == '__main__':
                     volume = volume / 30
                 elif "stocks50" in portfolio_df.iloc[0]["portfolioID"]:
                     volume = volume / 50
-                volume = volume / stock.open
+                volume = volume / stock.close
                 volume = round(volume)
                 transaction_table = { "portfolioID": portfolio_df.iloc[0]["portfolioID"],
                                         "symbol": stock.symbol,
                                         "type": "buy",
                                         "date": "2018-07-02",
-                                        "price": stock.open,
+                                        "price": stock.close,
                                         "volume": volume,
                                         "commission": 0.0 }
                 transaction_tables.append( transaction_table )
@@ -676,86 +642,12 @@ if __name__ == '__main__':
         weekBeforeDate = (pandas.Timestamp(currDate) + pandas.DateOffset(days=-7)).strftime('%Y-%m-%d')
         query = { "date": { "$lt": weekBeforeDate } }
         db.pf_stock_list.delete_many( query )
-        #Get latest set of earnings for current date
-        #print( iex_tools.mdb_get_symbols() )
-        symbols = iex_tools.mdb_get_symbols()['symbol'].tolist()
-        print( "Query earnings" )
-        earnings = iex_tools.mdb_get_earnings(symbols, currDate, "latest", "EPSReportDate")
-        earnings = earnings[["EPSReportDate","actualEPS","fiscalEndDate","fiscalPeriod","symbol"]]
-        #Get financials within 6 months
-        print( "Query financials" )
-        sixMonthsBeforeDate = (pandas.Timestamp(currDate) + pandas.DateOffset(months=-6)).strftime('%Y-%m-%d')
-        financials = iex_tools.mdb_get_financials(symbols, sixMonthsBeforeDate, "after")
-        financials = financials[ financials['reportDate'] <= earnings['fiscalEndDate'].max() ]
-        financials = financials[["symbol","reportDate","netIncome","shareholderEquity"]]
-        #Get prices for inception date
-        print( "Query prices" )
-        prices = iex_tools.mdb_get_chart(symbols, currDate, "latest")
+        #Get ranked stock list for current date
+        merged = iex_tools.mdb_calculate_top_stocks(currDate) 
         #Skip if latest date already in database
-        prices = prices.sort_values(by="date", ascending=False, axis="index")
-        pricesDate = prices.iloc[0]["date"]
-        latest_stock_list = iex_tools.mdb_get_stock_list(pricesDate, "latest")
-        if not latest_stock_list.empty:
-            print( "Stock list for today already exists" )
-        else:
-            #Get company data
-            company = iex_tools.mdb_get_company( symbols )
-            company = company[['symbol','companyName','industry','sector']]
-            #Merge dataframes together
-            print( "Merge dataframes" )
-            merged = pandas.merge(earnings,financials,how='inner',left_on=["symbol","fiscalEndDate"],right_on=["symbol","reportDate"],sort=False)
-            merged = pandas.merge(merged,prices,how='inner',on="symbol",sort=False)
-            merged = pandas.merge(merged,company,how='inner',on='symbol',sort=False)
-            #Remove any rows with missing values
-            merged = merged.dropna(axis=0, subset=["netIncome","actualEPS","open","shareholderEquity"])
-            #Calculate marketCap value
-            # price * netIncome / EPS = price * sharesOutstanding = mcap
-            # Actually not 100% accurate, should be netIncome - preferred dividend
-            # Doesn't perfectly match IEX value or google - probably good enough
-            merged["sharesOutstanding"] = merged.netIncome / merged.actualEPS
-            merged["marketCap"] = merged.sharesOutstanding * merged.open
-            #Calculate PE, ROE, and ratio
-            merged["peRatio"] = merged.open / merged.actualEPS
-            merged["returnOnEquity"] = merged.netIncome / merged.shareholderEquity
-            merged["peROERatio"] = merged.peRatio / merged.returnOnEquity
-            #Count number of stocks above mcap value
-            # A useful indicator of how universe compares to S&P500
-            print( "Universe before cuts..." )
-            print( "mcap > 50M: " + str(merged[merged["marketCap"] > 50000000].count()["marketCap"]) )
-            print( "mcap > 100M: " + str(merged[merged["marketCap"] > 100000000].count()["marketCap"]) )
-            print( "mcap > 500M: " + str(merged[merged["marketCap"] > 500000000].count()["marketCap"]) )
-            print( "mcap > 1B: " + str(merged[merged["marketCap"] > 1000000000].count()["marketCap"]) )
-            print( "mcap > 5B: " + str(merged[merged["marketCap"] > 5000000000].count()["marketCap"]) )
-            print( "mcap > 10B: " + str(merged[merged["marketCap"] > 10000000000].count()["marketCap"]) )
-            print( "mcap > 50B: " + str(merged[merged["marketCap"] > 50000000000].count()["marketCap"]) )
-            print( "mcap > 100B: " + str(merged[merged["marketCap"] > 100000000000].count()["marketCap"]) )
-            #Rank stocks
-            #Cut negative PE and ROE
-            merged = merged[(merged.peRatio > 0) & (merged.returnOnEquity > 0)]
-            #Remove invalid stock symbols, and different voting options
-            # Do the different voting options affect marketCap?
-            forbidden = [ "#", ".", "-" ]
-            merged = merged[ merged.apply( lambda x: not any( s in x['symbol'] for s in forbidden ), axis=1 ) ]
-            #Remove American Depositary Shares
-            ads_str = 'American Depositary Shares'
-            merged = merged[ merged.apply( lambda x: ads_str not in x['companyName'], axis=1 ) ]
-            #Remove industries that do not compare well
-            # e.g. Companies that have investments as assets
-            forbidden_industry = ['Brokers & Exchanges','REITs','Asset Management','Banks']
-            merged = merged[ ~merged.industry.isin( forbidden_industry ) ]
-            #Count number of stocks after cuts
-            print( "Universe after cuts..." )
-            print( "mcap > 50M: " + str(merged[merged["marketCap"] > 50000000].count()["marketCap"]) )
-            print( "mcap > 100M: " + str(merged[merged["marketCap"] > 100000000].count()["marketCap"]) )
-            print( "mcap > 500M: " + str(merged[merged["marketCap"] > 500000000].count()["marketCap"]) )
-            print( "mcap > 1B: " + str(merged[merged["marketCap"] > 1000000000].count()["marketCap"]) )
-            print( "mcap > 5B: " + str(merged[merged["marketCap"] > 5000000000].count()["marketCap"]) )
-            print( "mcap > 10B: " + str(merged[merged["marketCap"] > 10000000000].count()["marketCap"]) )
-            print( "mcap > 50B: " + str(merged[merged["marketCap"] > 50000000000].count()["marketCap"]) )
-            print( "mcap > 100B: " + str(merged[merged["marketCap"] > 100000000000].count()["marketCap"]) )
-            #Order by peROERatio
-            merged = merged.sort_values(by="peROERatio", ascending=True, axis="index")
-            insert_pf_stock_list = True
-            if insert_pf_stock_list:
-                print( "Inserting stock list" )
-                db.mdb_stock_list.insert_many( merged.to_dict('records') )
+        latestDate = merged.sort_values(by="date", ascending=False, axis="index")
+        latestDate = latestDate.iloc[0]["date"]
+        latestStockList = iex_tools.mdb_get_stock_list(latestDate, "on")
+        if latestStockList.empty and not merged.empty:
+            print( "Inserting stock list" )
+            db.stock_list.insert_many( merged.to_dict('records') )

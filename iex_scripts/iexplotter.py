@@ -2,10 +2,8 @@
 # Author: John Walker
 # Date: March 10th, 2019
 # Brief: A script that uses the 'iexplotter_tools' module to 
-#        query the diywealth database and plot stock info
-# Usage: ./iexplotter -s <> -b <begin date YYYY-MM-DD> -e <end date YYYY-MM-DD>
-#  e.g.: ./iexplotter -s AAPL -b 2018-10-03 -e 2019-02-15
-#  Would plot stock information for Apple
+#        query the diywealth database and plot portfolio performance
+# Usage: python3 iexplotter.py
 
 import iex_tools
 import iexplotter_tools

@@ -12,12 +12,14 @@ import datetime
 import glob
 import time
 import pymongo
+import bson
 from pymongo import MongoClient
 from pymongo import ASCENDING, DESCENDING
 import numpy
 import pandas
 from iex import reference
 from iex import Stock
+from utils import printProgressBar
 
 ################################################
 # General functions
@@ -101,7 +103,7 @@ def iex_get_chart(ref_symbol, ref_range='1m'):
     stock = Stock( ref_symbol )
     chart = stock.chart_table(ref_range)
     #Remove unnecesary data
-    chart.drop(["high","low","volume","unadjustedVolume","change","changePercent","vwap","label","changeOverTime"], axis=1, errors='ignore', inplace=True)
+    chart.drop(["volume","change","changePercent","changeOverTime"], axis=1, errors='ignore', inplace=True)
     #Add symbol name column
     if not chart.empty:
         chart_len = len( chart.index )
@@ -253,9 +255,10 @@ def mdb_get_symbols():
     for doc in results:
         symbols = symbols.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
 
-    symbols.drop("_id", axis=1, inplace=True)
-    symbols = symbols[symbols.isEnabled != False]
-    symbols.reset_index(drop=True, inplace=True)
+    if not symbols.empty:
+        symbols.drop("_id", axis=1, inplace=True)
+        symbols = symbols[symbols.isEnabled != False]
+        symbols.reset_index(drop=True, inplace=True)
 
     return symbols
 
@@ -283,7 +286,7 @@ def mdb_get_company(symbol):
 
 def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
     """
-    Return company information from MongoDB
+    Return company charts from MongoDB
     @params:
         ref_symbol  - Required  : symbol list ([Str])
         ref_date    - Optional  : date YYYY-MM-DD (Str)
@@ -294,8 +297,8 @@ def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
 
     query = []
 
-    #No more than 50 days ago
-    gte_date = (pandas.Timestamp(ref_date) + pandas.DateOffset(days=-50)).strftime('%Y-%m-%d')
+    #No more than 30 days ago
+    gte_date = (pandas.Timestamp(ref_date) + pandas.DateOffset(days=-210)).strftime('%Y-%m-%d')
 
     if when == "after":
         query = { "symbol": { "$in": ref_symbol },
@@ -332,7 +335,8 @@ def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
 
     chart = pandas.DataFrame()
     for doc in results:
-        chart = chart.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
+        #chart = chart.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
+        chart = pandas.concat( [chart,pandas.DataFrame.from_dict(doc, orient='index').T], axis=0, ignore_index=True, sort=False )
 
     chart.drop("_id", axis=1, errors='ignore', inplace=True)
     chart.reset_index(drop=True, inplace=True)
@@ -341,7 +345,7 @@ def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
 
 def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01", when = "after"):
     """
-    Return company information from MongoDB
+    Return company dividends from MongoDB
     @params:
         ref_symbol  - Required  : symbol list ([Str])
         ref_date    - Optional  : date YYYY-MM-DD (Str)
@@ -390,11 +394,15 @@ def mdb_get_dividends(ref_symbol, ref_date = "1900-01-01", when = "after"):
 
     return dividends
 
-#when = after
-#when = latest
-#date_type = fiscalEndDate
-#date_type = EPSReportDate
 def mdb_get_earnings(ref_symbol, ref_date = "1900-01-01", when = "after", date_type = "fiscalEndDate"):
+    """
+    Return company earnings from MongoDB
+    @params:
+        ref_symbol  - Required  : symbol list ([Str])
+        ref_date    - Optional  : date YYYY-MM-DD (Str)
+        when        - Optional  : after, latest (Str)
+        date_type   - Optional  : fiscalEndDate, EPSReportDate (Str)
+    """
 
     db = get_mongodb()
 
@@ -403,7 +411,7 @@ def mdb_get_earnings(ref_symbol, ref_date = "1900-01-01", when = "after", date_t
     if when == "after":
         query = { "symbol": { "$in": ref_symbol },
                     date_type: { "$gte": ref_date } }
-    else:
+    elif when == "latest":
         query = [
                     { "$match": { "symbol": { "$in": ref_symbol },
                                     date_type: { "$lte": ref_date } } },
@@ -419,7 +427,8 @@ def mdb_get_earnings(ref_symbol, ref_date = "1900-01-01", when = "after", date_t
                     },
                     { "$sort": { "symbol": ASCENDING } }
                 ]
-    #print( query )
+    else:
+        sys.exit("when not in [after, latest]")
 
     results = []
 
@@ -430,22 +439,21 @@ def mdb_get_earnings(ref_symbol, ref_date = "1900-01-01", when = "after", date_t
 
     earnings = pandas.DataFrame()
     for doc in results:
-        #print( doc )
-        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
         earnings = earnings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
-        #print( symbols )
-        #index = index+1
 
     earnings.drop("_id", axis=1, errors='ignore', inplace=True)
-    #symbols = symbols[symbols.isEnabled != False]
     earnings.reset_index(drop=True, inplace=True)
-    #print( earnings )
 
     return earnings
 
-#when = after
-#when = latest
 def mdb_get_financials(ref_symbol, ref_date = "1900-01-01", when = "after"):
+    """
+    Return company financials from MongoDB
+    @params:
+        ref_symbol  - Required  : symbol list ([Str])
+        ref_date    - Optional  : date YYYY-MM-DD (Str)
+        when        - Optional  : after, latest (Str)
+    """
 
     db = get_mongodb()
 
@@ -454,7 +462,7 @@ def mdb_get_financials(ref_symbol, ref_date = "1900-01-01", when = "after"):
     if when == "after":
         query = { "symbol": { "$in": ref_symbol },
                     "reportDate": { "$gte": ref_date } }
-    else:
+    elif when == "latest":
         query = [
                     { "$match": { "symbol": { "$in": ref_symbol },
                                     "reportDate": { "$lte": ref_date } } },
@@ -470,7 +478,8 @@ def mdb_get_financials(ref_symbol, ref_date = "1900-01-01", when = "after"):
                     },
                     { "$sort": { "symbol": ASCENDING } }
                 ]
-    #print( query )
+    else:
+        sys.exit("when not in [after, latest]")
 
     results = []
 
@@ -481,20 +490,19 @@ def mdb_get_financials(ref_symbol, ref_date = "1900-01-01", when = "after"):
 
     financials = pandas.DataFrame()
     for doc in results:
-        #print( doc )
-        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
         financials = financials.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
-        #print( symbols )
-        #index = index+1
 
     financials.drop("_id", axis=1, errors='ignore', inplace=True)
-    #symbols = symbols[symbols.isEnabled != False]
     financials.reset_index(drop=True, inplace=True)
-    #print( financials )
 
     return financials
 
 def mdb_get_portfolios(date):
+    """
+    Return portfolio information from MongoDB
+    @params:
+        date    - Required  : date YYYY-MM-DD (Str)
+    """
 
     db = get_mongodb()
 
@@ -507,15 +515,17 @@ def mdb_get_portfolios(date):
         portfolios = portfolios.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
 
     portfolios.drop("_id", axis=1, inplace=True)
-    #symbols = symbols[symbols.isEnabled != False]
-    #symbols.reset_index(drop=True, inplace=True)
-    #print( portfolios.columns.tolist() )
-    #print( portfolios['portfolioID'] )
 
     return portfolios
 
-#when = on, after
 def mdb_get_transactions(portfolioID, date, when = "on"):
+    """
+    Return portfolio transactions from MongoDB
+    @params:
+        portfolioID - Required  : portfolio ID (Str)
+        date        - Required  : date YYYY-MM-DD (Str)
+        when        - Optional  : on, after (Str)
+    """
 
     db = get_mongodb()
 
@@ -524,9 +534,11 @@ def mdb_get_transactions(portfolioID, date, when = "on"):
     if when == "on":
         query = { "portfolioID": portfolioID,
                     "date": date }
-    else:
+    elif when == "after":
         query = { "portfolioID": portfolioID,
                     "date": { "$gte": date } }
+    else:
+        sys.exit("when not in [on, after]")
 
     results = db.pf_transactions.find( query )
 
@@ -536,15 +548,17 @@ def mdb_get_transactions(portfolioID, date, when = "on"):
 
     if not transactions.empty:
         transactions.drop("_id", axis=1, inplace=True)
-    #symbols = symbols[symbols.isEnabled != False]
-    #symbols.reset_index(drop=True, inplace=True)
-    #print( symbols )
 
     return transactions
 
-#when = "on" holdings on that date
-#when = "after" holdings on or after that date
 def mdb_get_holdings(portfolioID, date = " 1990-01-01", when = "on"):
+    """
+    Return portfolio holdings from MongoDB
+    @params:
+        portfolioID - Required  : portfolio ID (Str)
+        date        - Optional  : date YYYY-MM-DD (Str)
+        when        - Optional  : on, after (Str)
+    """
 
     db = get_mongodb()
 
@@ -569,6 +583,8 @@ def mdb_get_holdings(portfolioID, date = " 1990-01-01", when = "on"):
     elif when == "after":
         query = { "portfolioID": portfolioID,
                     "lastUpdated": { "$gte": date } }
+    else:
+        sys.exit("when not in [on, after]")
 
     results = []
 
@@ -576,27 +592,26 @@ def mdb_get_holdings(portfolioID, date = " 1990-01-01", when = "on"):
         results = db.pf_holdings.aggregate( query )
     else:
         results = db.pf_holdings.find( query ).sort("date", ASCENDING)
-    #results = results.sort("symbol", ASCENDING)
 
     holdings = pandas.DataFrame()
     for doc in results:
-        #print( doc )
-        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
         holdings = holdings.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
-        #print( holdings )
-        #index = index+1
 
     if not holdings.empty:
         holdings.drop("_id", axis=1, inplace=True)
-    #print( holdings )
 
     return holdings
 
 def mdb_get_performance(ref_portfolioID, ref_date = "1990-01-01"):
+    """
+    Return portfolio performance from MongoDB
+    @params:
+        ref_portfolioID - Required  : portfolio ID (Str)
+        ref_date        - Optional  : date YYYY-MM-DD (Str)
+    """
 
     query = { "portfolioID": { "$in": ref_portfolioID },
                 "date": { "$gte": ref_date } }
-    #print( query )
 
     db = get_mongodb()
 
@@ -604,21 +619,20 @@ def mdb_get_performance(ref_portfolioID, ref_date = "1990-01-01"):
    
     performance = pandas.DataFrame()
     for doc in results:
-        #print( doc )
-        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
         performance = performance.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
-        #print( symbols )
-        #index = index+1
 
     performance.drop("_id", axis=1, errors='ignore', inplace=True)
-    #symbols = symbols[symbols.isEnabled != False]
     performance.reset_index(drop=True, inplace=True)
-    #print( performance )
 
     return performance
 
-#when = "on, "latest"
 def mdb_get_stock_list(ref_date = "1990-01-01", when = "on"):
+    """
+    Return ranked list of stocks from MongoDB
+    @params:
+        ref_date    - Optional  : date YYYY-MM-DD (Str)
+        when        - Optional  : on, latest (Str)
+    """
 
     db = get_mongodb()
 
@@ -644,27 +658,182 @@ def mdb_get_stock_list(ref_date = "1990-01-01", when = "on"):
                     },
                     { "$sort": { "symbol": ASCENDING } }
                 ]
-
-    #print( query )
+    else:
+        sys.exit("when not in [on, latest]")
 
     results = []
 
     if when == "on":
-        results = db.pf_stock_list.find( query )
+        results = db.stock_list.find( query )
     elif when == "latest":
-        results = db.pf_stock_list.aggregate( query )
+        results = db.stock_list.aggregate( query )
 
     stock_list = pandas.DataFrame()
     for doc in results:
-        #print( doc )
-        #print( pandas.DataFrame.from_dict(doc, orient='index').T )
         stock_list = stock_list.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
-        #print( symbols )
-        #index = index+1
 
     stock_list.drop("_id", axis=1, errors='ignore', inplace=True)
-    #symbols = symbols[symbols.isEnabled != False]
     stock_list.reset_index(drop=True, inplace=True)
-    #print( chart )
 
     return stock_list
+
+def mdb_calculate_top_stocks(ref_date):
+    """
+    Calculate ranked list of stocks
+    @params:
+        ref_date    - Required  : date YYYY-MM-DD (Str)
+    """
+
+    #Get ranked stock list for given date
+    symbols = mdb_get_symbols()['symbol'].tolist()
+    print( "Query earnings" )
+    earnings = mdb_get_earnings(symbols, ref_date, "latest", "EPSReportDate")
+    earnings = earnings[["EPSReportDate","actualEPS","fiscalEndDate","fiscalPeriod","symbol"]]
+    #Get financials within 6 months
+    print( "Query financials" )
+    sixMonthsBeforeDate = (pandas.Timestamp(ref_date) + pandas.DateOffset(months=-6)).strftime('%Y-%m-%d')
+    financials = mdb_get_financials(symbols, sixMonthsBeforeDate, "after")
+    financials = financials[ financials['reportDate'] <= earnings['fiscalEndDate'].max() ]
+    financials = financials[["symbol","reportDate","netIncome","shareholderEquity"]]
+    #Get prices for inception date
+    print( "Query prices" )
+    prices = mdb_get_chart(symbols, ref_date, "latest")
+    #Get company data
+    company = mdb_get_company( symbols )
+    company = company[['symbol','companyName','industry','sector']]
+    #Merge dataframes together
+    print( "Merge dataframes" )
+    merged = pandas.merge(earnings,financials,how='inner',left_on=["symbol","fiscalEndDate"],right_on=["symbol","reportDate"],sort=False)
+    merged = pandas.merge(merged,prices,how='inner',on="symbol",sort=False)
+    merged = pandas.merge(merged,company,how='inner',on='symbol',sort=False)
+    #Remove any rows with missing values
+    merged = merged.dropna(axis=0, subset=["netIncome","actualEPS","close","shareholderEquity"])
+    #Calculate marketCap value
+    # price * netIncome / EPS = price * sharesOutstanding = mcap
+    # Actually not 100% accurate, should be netIncome - preferred dividend
+    # Doesn't perfectly match IEX value or google - probably good enough
+    merged["sharesOutstanding"] = merged.netIncome / merged.actualEPS
+    merged["marketCap"] = merged.sharesOutstanding * merged.close
+    #Calculate PE, ROE, and ratio
+    merged["peRatio"] = merged.close / merged.actualEPS
+    merged["returnOnEquity"] = merged.netIncome / merged.shareholderEquity
+    merged["peROERatio"] = merged.peRatio / merged.returnOnEquity
+    #Count number of stocks above mcap value
+    # A useful indicator of how universe compares to S&P500
+    print( "Universe before cuts..." )
+    print( "mcap > 50M: " + str(merged[merged["marketCap"] > 50000000].count()["marketCap"]) )
+    print( "mcap > 100M: " + str(merged[merged["marketCap"] > 100000000].count()["marketCap"]) )
+    print( "mcap > 500M: " + str(merged[merged["marketCap"] > 500000000].count()["marketCap"]) )
+    print( "mcap > 1B: " + str(merged[merged["marketCap"] > 1000000000].count()["marketCap"]) )
+    print( "mcap > 5B: " + str(merged[merged["marketCap"] > 5000000000].count()["marketCap"]) )
+    print( "mcap > 10B: " + str(merged[merged["marketCap"] > 10000000000].count()["marketCap"]) )
+    print( "mcap > 50B: " + str(merged[merged["marketCap"] > 50000000000].count()["marketCap"]) )
+    print( "mcap > 100B: " + str(merged[merged["marketCap"] > 100000000000].count()["marketCap"]) )
+    #Rank stocks
+    #Cut negative PE and ROE
+    merged = merged[(merged.peRatio > 0) & (merged.returnOnEquity > 0)]
+    #Remove invalid stock symbols, and different voting options
+    # Do the different voting options affect marketCap?
+    forbidden = [ "#", ".", "-" ]
+    merged = merged[ merged.apply( lambda x: not any( s in x['symbol'] for s in forbidden ), axis=1 ) ]
+    #Remove American Depositary Shares
+    ads_str = 'American Depositary Shares'
+    merged = merged[ merged.apply( lambda x: ads_str not in x['companyName'], axis=1 ) ]
+    #Remove industries that do not compare well
+    # e.g. Companies that have investments as assets
+    forbidden_industry = ['Brokers & Exchanges','REITs','Asset Management','Banks']
+    merged = merged[ ~merged.industry.isin( forbidden_industry ) ]
+    #Count number of stocks after cuts
+    print( "Universe after cuts..." )
+    print( "mcap > 50M: " + str(merged[merged["marketCap"] > 50000000].count()["marketCap"]) )
+    print( "mcap > 100M: " + str(merged[merged["marketCap"] > 100000000].count()["marketCap"]) )
+    print( "mcap > 500M: " + str(merged[merged["marketCap"] > 500000000].count()["marketCap"]) )
+    print( "mcap > 1B: " + str(merged[merged["marketCap"] > 1000000000].count()["marketCap"]) )
+    print( "mcap > 5B: " + str(merged[merged["marketCap"] > 5000000000].count()["marketCap"]) )
+    print( "mcap > 10B: " + str(merged[merged["marketCap"] > 10000000000].count()["marketCap"]) )
+    print( "mcap > 50B: " + str(merged[merged["marketCap"] > 50000000000].count()["marketCap"]) )
+    print( "mcap > 100B: " + str(merged[merged["marketCap"] > 100000000000].count()["marketCap"]) )
+    #Order by peROERatio
+    merged = merged.sort_values(by="peROERatio", ascending=True, axis="index")
+
+    return merged
+
+def mdb_delete_duplicates(ref_date = "1990-01-01", when = "on"):
+    """
+    Delete duplicates prices in MongoDB
+    @params:
+        ref_date    - Optional  : date YYYY-MM-DD (Str)
+        when        - Optional  : on, latest (Str)
+    """
+
+    mdb_symbols = mdb_get_symbols()
+    mdb_symbols = mdb_symbols.iloc[ 999: , : ]
+    mdb_symbols.reset_index(drop=True, inplace=True)
+    #mdb_symbols = ["A"]
+    #print( mdb_symbols )
+    printProgressBar(0, len(mdb_symbols.index), prefix = 'Progress:', suffix = '', length = 50)
+    for index, symbol in mdb_symbols.iterrows():
+        #if index > 10:
+        #    break
+        #print( symbol )
+        db = get_mongodb()
+        query = { "symbol": { "$in": [symbol["symbol"]] },
+                    "date": { "$gte": "2017-01-01" } }
+        results = db.iex_charts.find( query ).sort("date", DESCENDING)
+        chart = pandas.DataFrame()
+        for doc in results:
+            chart = chart.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
+        duplicates = chart[chart.duplicated(['date'])]
+        #print( duplicates )
+    
+        # Remove all duplicates in one go    
+        #if not duplicates.empty:
+        #    db.iex_charts.delete_many({"_id":{"$in":duplicates['_id'].tolist()}})
+        # Remove duplicates if they exist
+        if not duplicates.empty:
+            #Update progress bar
+            printProgressBar(index+1, len(mdb_symbols.index), prefix = 'Progress:', suffix = "Deleting duplicates for " + symbol["symbol"] + "      ", length = 50)
+            db.iex_charts.delete_many({"_id":{"$in":duplicates['_id'].tolist()}})
+        else:
+            #Update progress bar
+            printProgressBar(index+1, len(mdb_symbols.index), prefix = 'Progress:', suffix = "No duplicates for " + symbol["symbol"] + "      ", length = 50)
+
+
+    #query = []
+
+    #Loop through symbols
+    #Get prices for symbol
+    #Find dublicates
+    #Delete duplicates
+
+    #db = get_mongodb()
+
+    #duplicates = []
+    #
+    #db.iex_charts.aggregate([
+    #    { "$match": { 
+    #        "symbol": { "$ne": "" }  # discard selection criteria
+    #        }},
+    #    { "$group": { 
+    #        "_id": { "symbol": "$symbol", "date": "$date" }, # can be grouped on multiple properties 
+    #        "dups": { "$addToSet": "$_id" }, 
+    #        "count": { "$sum": 1 } 
+    #        }}, 
+    #    { "$match": { 
+    #        "count": { "$gt": 1 }    # Duplicates considered as count greater than one
+    #        }}
+    #    ],
+    #    {"allowDiskUse": true}       # For faster processing if set is larger
+    ## You can display result until this and check duplicates 
+    #).forEach(bson.Code('''function(doc){
+    #    doc.dups.shift();      # First element skipped for deleting
+    #    doc.dups.forEach( function(dupId){ 
+    #        duplicates.push(dupId);   # Getting all duplicate ids
+    #    })    
+    #}''')
+    #
+    ## If you want to Check all "_id" which you are deleting else print statement not needed
+    #print(duplicates) 
+    
+    # Remove all duplicates in one go    
+    #db.collectionName.remove({_id:{$in:duplicates}})

@@ -10,7 +10,8 @@ from iex.utils import (parse_date,
 from iex.constants import (BASE_URL,
                            CHART_RANGES,
                            RANGES,
-                           DATE_FIELDS)
+                           DATE_FIELDS,
+                           TOKEN)
 
 class Market:
 
@@ -26,9 +27,9 @@ class Market:
 
     def _get(self, url, params={}):
         if not url:
-            request_url = f"{BASE_URL}/market"
+            request_url = f"{BASE_URL}/market/{TOKEN}"
         else:
-            request_url =f"{BASE_URL}/stock/market/{url}"
+            request_url =f"{BASE_URL}/stock/market/{url}/{TOKEN}"
         response = requests.get(request_url, params=params)
 
         if response.status_code != 200:

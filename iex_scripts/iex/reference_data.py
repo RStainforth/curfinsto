@@ -2,7 +2,8 @@ import pandas as pd
 import requests
 from iex.utils import (parse_date,
                        validate_output_format)
-from iex.constants import BASE_URL
+from iex.constants import (BASE_URL,
+                           TOKEN)
 
 
 class ReferenceData:
@@ -15,7 +16,7 @@ class ReferenceData:
         self.output_format = validate_output_format(output_format)
 
     def _get(self, path):
-        request_url = f"{BASE_URL}/ref-data/{path}"
+        request_url = f"{BASE_URL}/ref-data/{path}/{TOKEN}"
         response = requests.get(request_url)
         if response.status_code != 200:
             raise Exception(f"{response.status_code}: {response.content.decode('utf-8')}")

@@ -13,7 +13,8 @@ from iex.utils import (parse_date,
 from iex.constants import (BASE_URL,
                            CHART_RANGES,
                            RANGES,
-                           DATE_FIELDS)
+                           DATE_FIELDS,
+                           TOKEN)
 
 
 class IexStats:
@@ -23,7 +24,7 @@ class IexStats:
         self.date_format = validate_date_format(date_format)
 
     def _get(self, url, params={}):
-        request_url =f"{BASE_URL}/stats/{url}"
+        request_url =f"{BASE_URL}/stats/{url}/{TOKEN}"
         response = requests.get(request_url, params=params)
         if response.status_code != 200:
             raise Exception(f"{response.status_code}: {response.content.decode('utf-8')}")
