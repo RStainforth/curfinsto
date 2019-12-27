@@ -1,9 +1,4 @@
 <!DOCTYPE HTML>
-<!--
-	Theory by TEMPLATED
-	templated.co @templatedco
-	Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
--->
 <html>
 	<head>
 		<title>Portfolio Performance</title>
@@ -456,6 +451,8 @@ print 'It took ' + i + ' iterations to sort the deck.';
 						</div>
 					</div>
 
+                    <canvas id="myChart"></canvas>
+
 				</div>
 			</section>
 
@@ -482,6 +479,28 @@ print 'It took ' + i + ' iterations to sort the deck.';
 			<script src="assets/js/skel.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+            <script>
+                var ctx = document.getElementById('myChart').getContext('2d');
+                var chart = new Chart(ctx, {
+                    // The type of chart we want to create
+                    type: 'line',
+                
+                    // The data for our dataset
+                    data: {
+                        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                        datasets: [{
+                            label: 'My First dataset',
+                            backgroundColor: 'rgb(255, 99, 132)',
+                            borderColor: 'rgb(255, 99, 132)',
+                            data: [0, 10, 5, 2, 20, 30, 45]
+                        }]
+                    },
+                
+                    // Configuration options go here
+                    options: {}
+                });
+            </script>
 
 	</body>
 </html>

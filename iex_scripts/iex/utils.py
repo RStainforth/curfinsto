@@ -42,7 +42,10 @@ def param_bool(b):
         Converts True and False to true and false
         for passing to the IEX API.
     """
-    return str(b == True).lower()
+    if type(b) == bool:
+        return str(b == True).lower()
+    else:
+        return b
 
 
 def parse_date(date):

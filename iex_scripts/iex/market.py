@@ -27,9 +27,9 @@ class Market:
 
     def _get(self, url, params={}):
         if not url:
-            request_url = f"{BASE_URL}/market/{TOKEN}"
+            request_url = f"{BASE_URL}/market/?{TOKEN}"
         else:
-            request_url =f"{BASE_URL}/stock/market/{url}/{TOKEN}"
+            request_url =f"{BASE_URL}/stock/market/{url}/?{TOKEN}"
         response = requests.get(request_url, params=params)
 
         if response.status_code != 200:

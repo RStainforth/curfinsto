@@ -53,6 +53,8 @@ def set_column_sequence(dataframe, seq, front=True):
 ################################################
 # IEX interfacing functions
 ################################################
+
+TOKEN = "pk_36575baefeaa40b39425ccdc1651d393"
         
 def iex_get_symbols(ref_symbol=None, ref_type=None):
     """
@@ -63,7 +65,7 @@ def iex_get_symbols(ref_symbol=None, ref_type=None):
     """
 
     reference.output_format = 'dataframe'
-    symbols = reference.symbols()
+    symbols = reference.symbols(token=TOKEN)
     
     #Select only matching symbols
     if ref_symbol is not None:
@@ -82,7 +84,7 @@ def iex_get_company(ref_symbol):
     """
 
     stock = Stock( ref_symbol )
-    company = stock.company_table()
+    company = stock.company_table(token=TOKEN)
     #Remove unnecesary data
     company.drop(["exchange","website","CEO","issueType"], axis=1, errors='ignore', inplace=True)
     #Reorder dataframe
@@ -92,7 +94,7 @@ def iex_get_company(ref_symbol):
 
     return company
 
-def iex_get_chart(ref_symbol, ref_range='1m'):
+def iex_get_chart(ref_symbol, ref_range='1m', token=TOKEN):
     """
     Get charts from IEX
     @params:
@@ -101,7 +103,7 @@ def iex_get_chart(ref_symbol, ref_range='1m'):
     """
 
     stock = Stock( ref_symbol )
-    chart = stock.chart_table(ref_range)
+    chart = stock.chart_table(ref_range, chartCloseOnly=True, token=TOKEN)
     #Remove unnecesary data
     chart.drop(["volume","change","changePercent","changeOverTime"], axis=1, errors='ignore', inplace=True)
     #Add symbol name column
@@ -123,7 +125,7 @@ def iex_get_dividends(ref_symbol, ref_range='1m'):
     """
 
     stock = Stock( ref_symbol )
-    dividends = stock.dividends_table(ref_range)
+    dividends = stock.dividends_table(ref_range, token=TOKEN)
     #Remove unnecesary data
     dividends.drop(["recordDate","declaredDate","flag","type","qualified","indicated"], axis=1, errors='ignore', inplace=True)
     #Add symbol name column
@@ -144,7 +146,7 @@ def iex_get_earnings(ref_symbol):
     """
 
     stock = Stock( ref_symbol )
-    earnings = stock.earnings_table()
+    earnings = stock.earnings_table(last="1", period="annual", token=TOKEN)
     #Remove unnecesary data
     earnings.drop(["consensusEPS","estimatedEPS","numberOfEstimates","EPSSurpriseDollar","yearAgoChangePercent","estimatedChangePercent","symbolId"], axis=1, errors='ignore', inplace=True)
     #Add symbol name
@@ -165,7 +167,7 @@ def iex_get_financials(ref_symbol):
     """
 
     stock = Stock( ref_symbol )
-    financials = stock.financials_table()
+    financials = stock.financials_table(period="annual", token=TOKEN)
     #Add symbol name
     if not financials.empty:
         financials_len = len( financials.index )
@@ -297,8 +299,8 @@ def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
 
     query = []
 
-    #No more than 30 days ago
-    gte_date = (pandas.Timestamp(ref_date) + pandas.DateOffset(days=-210)).strftime('%Y-%m-%d')
+    #No more than 10 days ago
+    gte_date = (pandas.Timestamp(ref_date) + pandas.DateOffset(days=-10)).strftime('%Y-%m-%d')
 
     if when == "after":
         query = { "symbol": { "$in": ref_symbol },
@@ -309,8 +311,8 @@ def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
     elif when == "latest":
         query = [
                     { "$match": { "symbol": { "$in": ref_symbol },
-                                    "date": { "$lte": ref_date },
-                                    "date": { "$gte": gte_date } } },
+                                    "date": { "$lte": ref_date } } },
+                    { "$match": { "date": { "$gte": gte_date } } },
                     { "$sort": { "date": DESCENDING } },
                     { "$group": {
                         "_id": "$symbol",
@@ -323,6 +325,9 @@ def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
                     },
                     { "$sort": { "symbol": ASCENDING } }
                 ]
+        #query = { "symbol": { "$in": ref_symbol },
+        #          "date": { "$lte": ref_date },
+        #          "date": { "$gte": gte_date } }
     else:
         sys.exit("when not in [after, on, latest]!")
 
@@ -332,13 +337,18 @@ def mdb_get_chart(ref_symbol, ref_date = "1990-01-01", when = "after"):
         results = db.iex_charts.find( query ).sort("date", DESCENDING)
     else:
         results = db.iex_charts.aggregate( query )
+        #results = db.iex_charts.find( query )
 
     chart = pandas.DataFrame()
     for doc in results:
         #chart = chart.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
         chart = pandas.concat( [chart,pandas.DataFrame.from_dict(doc, orient='index').T], axis=0, ignore_index=True, sort=False )
 
-    chart.drop("_id", axis=1, errors='ignore', inplace=True)
+    #if when == "latest":
+    #    chart = chart.loc[chart.groupby("symbol").date.idxmax(),:]
+    #    chart.sort_values("symbol", axis=0, ascending=True, inplace=True)
+
+    chart.drop(["_id","open","uClose","uHigh","uLow","uOpen","uVolume"], axis=1, errors='ignore', inplace=True)
     chart.reset_index(drop=True, inplace=True)
 
     return chart
@@ -644,8 +654,8 @@ def mdb_get_stock_list(ref_date = "1990-01-01", when = "on"):
         query = { "date": ref_date }
     elif when == "latest":
         query = [
-                    { "$match": { "date": { "$lte": ref_date },
-                                    "date": { "$gte": gte_date } } },
+                    { "$match": { "date": { "$lte": ref_date } } },
+                    { "$match": { "date": { "$gte": gte_date } } },
                     { "$sort": { "date": DESCENDING } },
                     { "$group": {
                         "_id": "$symbol",
@@ -689,15 +699,29 @@ def mdb_calculate_top_stocks(ref_date):
     print( "Query earnings" )
     earnings = mdb_get_earnings(symbols, ref_date, "latest", "EPSReportDate")
     earnings = earnings[["EPSReportDate","actualEPS","fiscalEndDate","fiscalPeriod","symbol"]]
+    #print( earnings )
     #Get financials within 6 months
     print( "Query financials" )
     sixMonthsBeforeDate = (pandas.Timestamp(ref_date) + pandas.DateOffset(months=-6)).strftime('%Y-%m-%d')
     financials = mdb_get_financials(symbols, sixMonthsBeforeDate, "after")
     financials = financials[ financials['reportDate'] <= earnings['fiscalEndDate'].max() ]
     financials = financials[["symbol","reportDate","netIncome","shareholderEquity"]]
+    #print( financials )
     #Get prices for inception date
     print( "Query prices" )
-    prices = mdb_get_chart(symbols, ref_date, "latest")
+    idx_min = 0
+    query_num = 100
+    prices = pandas.DataFrame()
+    while idx_min < len(symbols):
+        idx_max = idx_min + query_num
+        if idx_max > len(symbols):
+            idx_max = len(symbols)
+        symbols_split = symbols[idx_min:idx_max]
+        prices_split = mdb_get_chart(symbols_split, ref_date, "latest")
+        prices = prices.append(prices_split, ignore_index=True, sort=False)
+        idx_min = idx_min + query_num
+    prices.reset_index(drop=True, inplace=True)
+    #print( prices )
     #Get company data
     company = mdb_get_company( symbols )
     company = company[['symbol','companyName','industry','sector']]

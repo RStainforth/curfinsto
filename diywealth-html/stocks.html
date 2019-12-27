@@ -1,9 +1,4 @@
 <!DOCTYPE HTML>
-<!--
-	Theory by TEMPLATED
-	templated.co @templatedco
-	Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
--->
 <html>
 	<head>
 		<title>Stock Selector</title>
@@ -30,43 +25,28 @@
 				</div>
 			</header>
 
-		<!-- Three -->
-			<section id="three" class="wrapper">
+		<!-- Stock list -->
+			<section id="stocks" class="wrapper">
 				<div class="inner">
+
 					<header class="align-center">
-						<h2>Nunc Dignissim</h2>
-						<p>Aliquam erat volutpat nam dui </p>
+						<h2>Stock Selector</h2>
 					</header>
-					<p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?</p>
-					<p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.</p>
-					<div class="flex flex-2">
-						<article>
-							<div class="image fit">
-								<img src="images/pic01.jpg" alt="Pic 01" />
-							</div>
-							<header>
-								<h3>Praesent placerat magna</h3>
-							</header>
-							<p>Praesent dapibus, neque id cursus faucibus, tortor neque egestas augue, eu vulputate magna eros eu erat. Aliquam erat volutpat. Nam dui mi, tincidunt quis, accumsan porttitor lorem ipsum.</p>
-							<footer>
-								<a href="#" class="button special">More</a>
-							</footer>
-						</article>
-						<article>
-							<div class="image fit">
-								<img src="images/pic02.jpg" alt="Pic 02" />
-							</div>
-							<header>
-								<h3>Fusce pellentesque tempus</h3>
-							</header>
-							<p>Sed adipiscing ornare risus. Morbi est est, blandit sit amet, sagittis vel, euismod vel, velit. Pellentesque egestas sem. Suspendisse commodo ullamcorper magna non comodo sodales tempus.</p>
-							<footer>
-								<a href="#" class="button special">More</a>
-							</footer>
-						</article>
-					</div>
+                    <p>Here is a list of stocks selected by the DIYWealth algorithm. Select stocks with sufficient market capitalisation according to your risk appetite.</p>
+                    <p>Note: The data may note be completely up to date. We have to pay for the data and simply can't afford to pay for the financial data the moment it becomes available. We try to keep earnings and financials no more than a quarter out of date and prices to the day if possible. You should check the values presented here are reasonable using another data provider e.g. Google.</p>
+
+					<!-- Form -->
+					<h3>Minimum market capitalisation ($100M)</h3>
+                    <ul class="actions">
+                        <li><input type="number" name="mcap" id="mcap" value="0" min="0" placeholder="Minimum market capitalisation ($100M)" /></li>
+                        <li><input type="submit" onclick="get_json_data();" value="Get Stocks" /></li>
+                    </ul>
+                    <div class="table-wrapper" id="stockTable"></div>
+
 				</div>
 			</section>
+
+
 
 		<!-- Footer -->
 			<footer id="footer">
@@ -91,6 +71,67 @@
 			<script src="assets/js/skel.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+
+            <script type="text/javascript">
+                window.addEventListener('keydown',function(e){if(e.keyIdentifier=='U+000A'||e.keyIdentifier=='Enter'||e.keyCode==13){if(e.target.nodeName=='INPUT'&&e.target.type=='number'){e.preventDefault();return false;}}},true);
+            </script>
+            <!-- Load table data -->
+            <script>
+                //first add an event listener for page load
+                document.addEventListener( "DOMContentLoaded", get_json_data, false ); // get_json_data is the function name that will fire on page load
+
+                //this function is in the event listener and will execute on page load
+                function get_json_data(){
+                    // Relative URL of external json file
+                    var json_url = 'data/stock_list.json';
+
+                    //Build the XMLHttpRequest (aka AJAX Request)
+                    xmlhttp = new XMLHttpRequest();
+                    xmlhttp.onreadystatechange = function() {
+                        if (this.readyState == 4 && this.status == 200) {//when a good response is given do this
+
+                            var data = JSON.parse(this.responseText); // convert the response to a json object
+                            append_json(data);// pass the json object to the append_json function
+                        }
+                    }
+                    //set the request destination and type
+                    xmlhttp.open("POST", json_url, true);
+                    //set required headers for the request
+                    xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                    // send the request
+                    xmlhttp.send(); // when the request completes it will execute the code in onreadystatechange section
+                }
+
+                //this function appends the json data to the table 'gable'
+                function append_json(data){
+                    var table = document.createElement('table');
+                    var thead = document.createElement('thead');
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<th>' + "Symbol" + '</th>' +
+                        '<th>' + "Name" + '</th>' +
+                        '<th>' + "PE Ratio" + '</th>' +
+                        '<th>' + "Return On Equity" + '</th>' +
+                        '<th>' + "MCap ($100M)" + '</th>';
+                    thead.appendChild(tr);
+                    table.appendChild(thead);
+                    var tbody = document.createElement('tbody');
+                    var mcap = document.getElementById('mcap');
+                    data.forEach(function(object) {
+                        if (object.marketCap/100000000 > mcap.value) {
+                            var tr = document.createElement('tr');
+                            tr.innerHTML = '<td>' + object.symbol + '</td>' +
+                            '<td>' + object.companyName + '</td>' +
+                            '<td>' + object.peRatio.toFixed(1) + '</td>' +
+                            '<td>' + object.returnOnEquity.toFixed(1) + '</td>' +
+                            '<td>' + (object.marketCap/100000000).toFixed(1) + '</td>';
+                            tbody.appendChild(tr);
+                        }
+                    });
+                    table.appendChild(tbody);
+                    document.getElementById('stockTable').innerHTML = "";
+                    document.getElementById('stockTable').appendChild(table);
+                }
+            </script>
 
 	</body>
 </html>

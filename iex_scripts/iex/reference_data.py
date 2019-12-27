@@ -15,9 +15,9 @@ class ReferenceData:
         """
         self.output_format = validate_output_format(output_format)
 
-    def _get(self, path):
-        request_url = f"{BASE_URL}/ref-data/{path}/{TOKEN}"
-        response = requests.get(request_url)
+    def _get(self, path, params={}):
+        request_url = f"{BASE_URL}/ref-data/{path}"
+        response = requests.get(request_url, params=params)
         if response.status_code != 200:
             raise Exception(f"{response.status_code}: {response.content.decode('utf-8')}")
         if self.output_format == 'json':
@@ -29,8 +29,13 @@ class ReferenceData:
             result = result.reindex(cols, axis=1)
             return result
 
-    def symbols(self):
-        return self._get("symbols")
+    def symbols(self,
+                token=None):
+        # Setup parameters
+        params = {'token': token}
+        if token and type(token) != str:
+            raise ValueError("token must be str")
+        return self._get("symbols", params=params)
 
     def iex_corporate_actions(self, date=None):
         date = parse_date(date)

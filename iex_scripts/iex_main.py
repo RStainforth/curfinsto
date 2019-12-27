@@ -26,7 +26,7 @@ if __name__ == '__main__':
     insert_company = False
     delete_prices = False
     delete_duplicates = False
-    insert_prices = True
+    insert_prices = False
     insert_dividends = False
     insert_earnings = False
     insert_financials = False
@@ -36,6 +36,8 @@ if __name__ == '__main__':
     update_holdings = False
     insert_performance = False
     insert_stock_list = False
+    export_stock_list = False
+    export_performance = True
 
     #Get database connection
     db = iex_tools.get_mongodb()
@@ -128,7 +130,7 @@ if __name__ == '__main__':
         printProgressBar(0, len(mdb_symbols_full.index), prefix = 'Progress:', suffix = '', length = 50)
         idx_min = 0
         query_num = 1000
-        flag = False
+        #flag = False
         while idx_min < len(mdb_symbols_full.index):
             #if idx_min > 1:
             #    break
@@ -146,11 +148,11 @@ if __name__ == '__main__':
                 #Get 1y of charts from IEX
                 #print( mdb_symbol )
                 #print( mdb_symbol["symbol"] )
-                if mdb_symbol["symbol"] == "HSTM":
-                    flag = True
-                if not flag:
-                    continue
-                iex_chart = iex_tools.iex_get_chart( mdb_symbol["symbol"], ref_range='ytd' )
+                #if mdb_symbol["symbol"] == "ZZZZZZZZZ":
+                #    flag = True
+                #if not flag:
+                #    continue
+                iex_chart = iex_tools.iex_get_chart( mdb_symbol["symbol"], ref_range='5d' )
                 #Get matching chart in MongoDB
                 mdb_chart = mdb_charts[ mdb_charts['symbol'] == mdb_symbol["symbol"] ]
                 #Select charts more recent than MongoDB
@@ -184,8 +186,13 @@ if __name__ == '__main__':
         mdb_dividends = iex_tools.mdb_get_dividends( mdb_symbols['symbol'].tolist(), currDate, "latest" )
         #Initial call to print 0% progress
         printProgressBar(0, len(mdb_symbols.index), prefix = 'Progress:', suffix = '', length = 50)
+        flag = False
         #Loop through symbols
         for index, mdb_symbol in mdb_symbols.iterrows():
+            if mdb_symbol["symbol"] == "ZZZZZZZZZ":
+                flag = True
+            if not flag:
+                continue
             #Get 1y of dividends from IEX
             iex_dividends = iex_tools.iex_get_dividends( mdb_symbol["symbol"], ref_range='1y' )
             #Get matching dividend in MongoDB
@@ -357,6 +364,7 @@ if __name__ == '__main__':
         print( "Create portfolio transaction tables" )
         transactionDate = "2018-07-02"
         dayBeforeDate = (pandas.Timestamp(transactionDate) + pandas.DateOffset(days=-1)).strftime('%Y-%m-%d')
+        print( dayBeforeDate )
         #Get ranked stock list for current date
         merged = iex_tools.mdb_calculate_top_stocks(dayBeforeDate)
         #Define dataframes containing stocks to be bought
@@ -463,6 +471,21 @@ if __name__ == '__main__':
                 continue
             #Loop through dates and update holdings table
             while date <= currDate:
+
+                #Insert dividends to transactions database and update transactions table
+                #Dividends will be ahead of time so will be ready to be added on the correct date
+                #Get portfolios
+                #Loop through portfolios
+                #Get the transactions from inception
+                #Get list of all stocks in transactions
+                #Loop from inception to current date
+                #Get dividends for stocks
+                #On exDate get number of shares
+                #Add all buys
+                #Subtract all sells
+                #Is paymentDate in transactions?
+                #If not add dividend on paymentDate
+
                 transactions_date = transactions[transactions.date == date]
                 #Loop through transactions
                 for t_index, transaction in transactions_date.iterrows():
@@ -512,6 +535,22 @@ if __name__ == '__main__':
     #Find out if any dividends were paid to portfolio
     if update_holdings:
         print( "Print if any dividends to be applied" )
+
+        #Add this all to insert_holdings
+        #Dividends will be ahead of time so will be ready to be added on the correct date
+        #Get portfolios
+        #Loop through portfolios
+        #Get the transactions from inception
+        #Get list of all stocks in transactions
+        #Loop from inception to current date
+        #Get dividends for stocks
+        #On exDate get number of shares
+        #Add all buys
+        #Subtract all sells
+        #Is paymentDate in transactions?
+        #If not add dividend on paymentDate
+
+
         #Update holdings tables to account for dividends paid
         #Calculate portfolio value
         #Monitor dividends and store in cash
@@ -548,6 +587,7 @@ if __name__ == '__main__':
             print( 'Inserting performance tables for ' + portfolio )
             #Get holdings tables from inception
             holdings = iex_tools.mdb_get_holdings(portfolio, inceptionDate, "after").sort_values(by="lastUpdated", ascending=False, axis="index")
+            #print( holdings )
             #Default to calculating performance from inception
             date = inceptionDate
             #Get list of symbols in holdings table
@@ -567,12 +607,14 @@ if __name__ == '__main__':
                 prevCloseValue = performance.iloc[0]["closeValue"]
             #Get prices for symbols in portfolio after date
             prices = iex_tools.mdb_get_chart(symbols, date, "after")
+            #print( prices )
             #If there are no prices then can't calculate performance
             if prices.empty:
                 print( "No prices!" )
                 continue
             #Get any transactions after date
             transactions = iex_tools.mdb_get_transactions(portfolio, date, "after")
+            #print( transactions )
             #Loop through dates
             while date <= currDate:
                 #Initialize portfolio close of day values
@@ -583,6 +625,7 @@ if __name__ == '__main__':
                 holdings_date = holdings_date[holdings_date.groupby(['symbol'], sort=False)['lastUpdated'].transform(max) == holdings['lastUpdated']]
                 #Merge with stock prices
                 holdings_date = pandas.merge(holdings_date,prices[prices.date == date],how='left',left_on=["symbol"],right_on=["symbol"],sort=False)
+                #print( holdings_date )
                 #Skip any day where there aren't prices for all stocks
                 if holdings_date[holdings_date.symbol != "USD"].isnull().values.any():
                     date = (pandas.Timestamp(date) + pandas.DateOffset(days=1)).strftime('%Y-%m-%d')
@@ -600,6 +643,8 @@ if __name__ == '__main__':
                 if not transactions.empty:
                     deposits = transactions[(transactions.date == date) & (transactions.type == "deposit")]
                     withdrawals = transactions[(transactions.date == date) & (transactions.type == "withdrawal")]
+                #print( deposits )
+                #print( withdrawals )
                 #Adjust close or previous close for withdrawals/deposits
                 adjPrevCloseValue = prevCloseValue
                 adjCloseValue = closeValue
@@ -629,6 +674,7 @@ if __name__ == '__main__':
                 date = (pandas.Timestamp(date) + pandas.DateOffset(days=1)).strftime('%Y-%m-%d')
             #Insert performance table
             insert_pf_performance = True
+            #print( perf_tables )
             if insert_pf_performance:
                 db.pf_performance.insert_many( perf_tables )
 
@@ -651,3 +697,66 @@ if __name__ == '__main__':
         if latestStockList.empty and not merged.empty:
             print( "Inserting stock list" )
             db.stock_list.insert_many( merged.to_dict('records') )
+
+    #Export latest stock lists
+    if export_stock_list:
+        print( "Exportiing stock list to json" )
+        #currDate = datetime.datetime.now().strftime("%Y-%m-%d")
+        currDate = "2019-05-01"
+        #latestStockList = iex_tools.mdb_get_stock_list(currDate, "latest")
+        latestStockList = iex_tools.mdb_calculate_top_stocks(currDate)
+        #Check that list is ordered correctly!
+        #Export stock list dataframe to json file
+        latestStockList.to_json(path_or_buf="stock_list.json", orient="records")
+
+    #Export latest performance
+    if export_performance:
+        print( "Exporting performance tables to json" )
+        #Start date
+        startDate = "2018-07-02"
+        #Get list of portfolios
+        portfolios = iex_tools.mdb_get_portfolios(startDate)["portfolioID"].tolist()
+        #Export SPY performance
+        spy_charts = iex_tools.mdb_get_chart(["SPY"]).sort_values(by="date", ascending=True, axis="index")
+        spy_charts.reset_index(drop=True, inplace=True)
+        fst_index = spy_charts[spy_charts.date >= startDate].index[0]-1
+        spy_charts = spy_charts[spy_charts.index >= fst_index]
+        spy_dates = spy_charts["date"].tolist()
+        spy_close = spy_charts["close"].tolist()
+        spy_return_vals = [100.*((i/spy_close[0])-1.0) for i in spy_close]
+        spy_return = pandas.DataFrame()
+        for index, date in enumerate(spy_dates):
+            doc = { "date": date, "return": spy_return_vals[index] }
+            spy_return = spy_return.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
+        #spy_charts["return"] = 100.*(spy_charts["close"]/spy_charts["close"].iloc[0])-1.0)
+        #spy_charts = spy_charts[["date","return"]]
+        spy_charts.to_json(path_or_buf="spy_performance.json", orient="records")
+        #Get list of portfolios
+        portfolios = iex_tools.mdb_get_portfolios(startDate)["portfolioID"].tolist()
+        #Loop through portfolios
+        for portfolio in portfolios:
+            #Get portfolio performance data
+            perf_table = iex_tools.mdb_get_performance([portfolio], startDate).sort_values(by="date", ascending=True, axis="index")
+            #print( perf_table )
+            perf_dates = perf_table["date"].tolist()
+            perf_dates.insert(0, spy_charts["date"].iloc[0])
+            perf_percent = perf_table["percentReturn"].tolist()
+            #perf_close.insert(0, 0.0)
+            #print( perf_dates )
+            #print( perf_close )
+            #print( len(perf_dates) )
+            #print( len(perf_close) )
+            #for i in range( len(perf_dates) ):
+            #    print( '%s %d' % (perf_dates[i], perf_close[i]) )
+            perf_return = [0.0]
+            for percent in perf_percent:
+                perf_return.append( ((((100.0+percent)/100.0)*((100.0+perf_return[-1])/100.0))-1.0)*100.0 )
+            #perf_return = [100.*((i/perf_close[0])-1.0) for i in perf_close]
+            #print( perf_return )
+            #print( len( perf_return ) )
+            #print( len( perf_dates ) )
+            pf_return = pandas.DataFrame()
+            for index, date in enumerate(perf_dates):
+                doc = { "date": date, "return": perf_return[index] }
+                pf_return = pf_return.append( pandas.DataFrame.from_dict(doc, orient='index').T, ignore_index=True, sort=False )
+            pf_return.to_json(path_or_buf=portfolio+"_performance.json", orient="records")

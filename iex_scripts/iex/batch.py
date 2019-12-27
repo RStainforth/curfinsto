@@ -45,7 +45,7 @@ class Batch:
         self.output_format = validate_output_format(output_format)
 
     def _get(self, _type, params={}):
-        request_url = BASE_URL + '/stock/market/batch/{TOKEN}'
+        request_url = BASE_URL + '/stock/market/batch/?{TOKEN}'
         params.update({'symbols': self.symbols_list,
                        'types': _type})
         response = requests.get(request_url, params=params)

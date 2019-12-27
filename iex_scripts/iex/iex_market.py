@@ -56,7 +56,7 @@ class IexMarket:
 
     def _get(self, url, params={}):
         request_url =f"{BASE_URL}"
-        response = requests.get(f"{request_url}/{url}/{TOKEN}", params=params)
+        response = requests.get(f"{request_url}/{url}/?{TOKEN}", params=params)
         if response.status_code != 200:
             raise Exception(f"{response.status_code}: {response.content.decode('utf-8')}")
         result = response.json()

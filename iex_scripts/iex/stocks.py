@@ -25,7 +25,7 @@ class Stock:
         self.date_format = validate_date_format(date_format)
 
     def _get(self, url, params={}):
-        request_url =f"{BASE_URL}/stock/{self.symbol}/{url}/{TOKEN}&chartCloseOnly=true"
+        request_url =f"{BASE_URL}/stock/{self.symbol}/{url}"
         response = requests.get(request_url, params=params)
         if response.status_code != 200:
             raise Exception(f"{response.status_code}: {response.content.decode('utf-8')}")
@@ -50,7 +50,9 @@ class Stock:
               range='1m',
               chartReset=None,
               chartSimplify=None,
-              chartInterval=None):
+              chartInterval=None,
+              chartCloseOnly=None,
+              token=None):
         """
             Args:
                 range - what range of data to retrieve. The variable 'CHART_RANGES'
@@ -60,7 +62,9 @@ class Stock:
         # Setup parameters
         params = {'chartReset': chartReset,
                   'chartSimplify': chartSimplify,
-                  'chartInterval': chartInterval}
+                  'chartInterval': chartInterval,
+                  'chartCloseOnly': chartCloseOnly,
+                  'token': token}
         params = {k: param_bool(v) for k, v in params.items() if v}
         if chartReset and type(chartReset) != bool:
             raise ValueError("chartReset must be bool")
@@ -68,6 +72,10 @@ class Stock:
             raise ValueError("chartSimplify must be bool")
         if chartInterval and type(chartInterval) != int:
             raise ValueError("chartInterval must be int")
+        if chartCloseOnly and type(chartCloseOnly) != bool:
+            raise ValueError("chartCloseOnly must be bool")
+        if token and type(token) != str:
+            raise ValueError("token must be str")
 
         # Validate range is appropriate
         validate_range_set(range, CHART_RANGES)
@@ -87,7 +95,9 @@ class Stock:
                     range='1m',
                     chartReset=None,
                     chartSimplify=None,
-                    chartInterval=None):
+                    chartInterval=None,
+                    chartCloseOnly=None,
+                    token=None):
         """
             Args:
                 range
@@ -99,7 +109,9 @@ class Stock:
 
         params = {'chartReset': chartReset,
                   'chartSimplify': chartSimplify,
-                  'chartInterval': chartInterval}
+                  'chartInterval': chartInterval,
+                  'chartCloseOnly': chartCloseOnly,
+                  'token': token}
         params = {k: v for k, v in params.items() if v}
 
         chart_result = self.chart(range, **params)
@@ -115,35 +127,93 @@ class Stock:
         elif type(chart_result) == list:
             return pd.DataFrame.from_dict(chart_result)
 
-    def company(self):
-        return self._get("company")
+    def company(self,
+                token=None):
 
-    def company_table(self):
-        company = self.company()
+        # Setup parameters
+        params = {'token': token}
+        if token and type(token) != str:
+            raise ValueError("token must be str")
+                
+        return self._get("company", params=params)
+
+    def company_table(self,
+                      token=None):
+
+        # Setup parameters
+        params = {'token': token}
+        if token and type(token) != str:
+            raise ValueError("token must be str")
+
+        company = self.company(**params)
         if "tags" in company: del company["tags"]
         return pd.DataFrame.from_dict([company])
 
     def delayed_quote(self):
         return self._get("delayed-quote")
 
-    def dividends(self, range='1m'):
+    def dividends(self,
+                  range='1m',
+                  token=None):
         """
             Args:
                 range - what range of data to retrieve. The variable
                         'DIVIDEND_RANGES' has possible values in addition to a date.
         """
-        validate_range_set(range, RANGES)
-        return self._get(f"dividends/{range}")
 
-    def dividends_table(self, range='1m'):
-        dividends_data = self.dividends(range)
+        # Setup parameters
+        params = {'token': token}
+        if token and type(token) != str:
+            raise ValueError("token must be str")
+
+        validate_range_set(range, RANGES)
+
+        return self._get(f"dividends/{range}", params=params)
+
+    def dividends_table(self,
+                        range='1m',
+                        token=None):
+
+        # Setup parameters
+        params = {'token': token}
+        dividends_data = self.dividends(range, **params)
         return pd.DataFrame.from_dict(dividends_data)
 
-    def earnings(self):
-        return self._get("earnings").get('earnings')
+    def earnings(self,
+                 last='1',
+                 period=None,
+                 token=None):
+        """
+            Args:
+                last - Number of quarters or years to return. Default is 1.
+        """
 
-    def earnings_table(self):
-        return pd.DataFrame.from_dict(self.earnings())
+        # Setup parameters
+        params = {'period': period,
+                  'token': token}
+        params = {k: v for k, v in params.items() if v}
+        if period and type(period) != str:
+            raise ValueError("period must be str")
+        if token and type(token) != str:
+            raise ValueError("token must be str")
+
+        return self._get("earnings/{last}", params=params).get('earnings')
+
+    def earnings_table(self,
+                       last='1',
+                       period=None,
+                       token=None):
+        """
+            Args:
+                last - Number of quarters or years to return. Default is 1.
+        """
+
+        # Setup parameters
+        params = {'period': period,
+                  'token': token}
+        params = {k: v for k, v in params.items() if v}
+
+        return pd.DataFrame.from_dict(self.earnings(last, **params))
 
     def effective_spread(self):
         return self._get("effective-spread")
@@ -151,11 +221,31 @@ class Stock:
     def effective_spread_table(self):
         return pd.DataFrame.from_dict(self.effective_spread())
 
-    def financials(self):
-        return self._get("financials").get('financials')
+    def financials(self,
+                   period=None,
+                   token=None):
 
-    def financials_table(self):
-        return pd.DataFrame.from_dict(self.financials())
+        # Setup parameters
+        params = {'period': period,
+                  'token': token}
+        params = {k: v for k, v in params.items() if v}
+        if period and type(period) != str:
+            raise ValueError("period must be str")
+        if token and type(token) != str:
+            raise ValueError("token must be str")
+
+        return self._get("financials", params=params).get('financials')
+
+    def financials_table(self,
+                         period=None,
+                         token=None):
+
+        # Setup parameters
+        params = {'period': period,
+                  'token': token}
+        params = {k: v for k, v in params.items() if v}
+
+        return pd.DataFrame.from_dict(self.financials(**params))
 
     def stats(self):
         return self._get("stats")
